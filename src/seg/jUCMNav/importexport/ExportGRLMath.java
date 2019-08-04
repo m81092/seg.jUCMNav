@@ -53,7 +53,6 @@ public class ExportGRLMath implements IURNExport {
 	public static final String Minus = "-";
 	public static final String Multi = "*";
 	public static final String KPI = "KPI";
-	
 
 	private Map<IntentionalElement, StringBuffer> eleForMap;// store elements and the functions .
 
@@ -69,27 +68,27 @@ public class ExportGRLMath implements IURNExport {
 
 	@Override
 	public void export(URNspec urn, HashMap mapDiagrams, String filename) throws InvocationTargetException {
-		 FeatureToMath FeatureExport = new FeatureToMath( );
-		 
+		FeatureToMath FeatureExport = new FeatureToMath();
+
 		try {
 			fos = new FileOutputStream(filename);
 			// to run the functions
 			writeHead();
-			
-			boolean GRLFound=false;	
-			for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) { 
+
+			boolean GRLFound = false;
+			for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 				IntentionalElement element = (IntentionalElement) it.next();
-	    	  if (element.getType().toString().contains("Goal")) {
-	    		  GRLFound=true;
-	    		  break;
-	    	  }
+				if (element.getType().toString().contains("Goal")) {
+					GRLFound = true;
+					break;
+				}
 			}
 			if (GRLFound) {
-			writeFormula(urn);
-			writeActor(urn);
-			// writeIndicator(urn);
-			writeModel(urn);
-			writeTranslation(urn);
+				writeFormula(urn);
+				writeActor(urn);
+				// writeIndicator(urn);
+				writeModel(urn);
+				writeTranslation(urn);
 			}
 			FeatureExport.export(urn, mapDiagrams, filename);
 		} catch (Exception e) {
@@ -105,29 +104,31 @@ public class ExportGRLMath implements IURNExport {
 			}
 		}
 	}
-	
+
 	/**
 	 * Returns the indicator values based on the metadata.
 	 * 
-	 * @param element
-	 *            the element to fetch its metadata
+	 * @param element the element to fetch its metadata
 	 */
 	private String[] getIndicatorValues(IntentionalElement element) throws IOException {
 		String value = MetadataHelper.getMetaData(element, KPI);
 		// check if the value contains value in the form of (T, TH, W, Unit) values
-		if (value != null && value.matches("[0-9]{1,3}(,|;)[0-9]{1,3}(,|;)[0-9]{1,3}(,|;)[a-zA-Z]*")) {
-			String indicatorValues[] = value.split("[,;]");
+		if (value != null && value.matches("[sS]{1}(:)[0-9]{1,3}(,|;)[0-9]{1,3}(,|;)[0-9]{1,3}(,|;)[a-zA-Z]*")) {
+			String indicatorValues[] = value.split("[,;:]");
+			return indicatorValues;
+		} else if (value != null && value.matches("[fF]{1}(:).*")) {
+			String indicatorValues[] = value.split("[:]");
 			return indicatorValues;
 		} else {
 			return null;
 		}
+
 	}
 
 	/**
 	 * Write the string to the file output stream.
 	 * 
-	 * @param s
-	 *            the string to write
+	 * @param s the string to write
 	 * @throws IOException
 	 */
 	public void write(String s) throws IOException {
@@ -155,72 +156,79 @@ public class ExportGRLMath implements IURNExport {
 		eleForMap = new HashMap<IntentionalElement, StringBuffer>();
 		StringBuffer eleFormula;
 		StringBuffer function;
-		// initial all the symbols
+		// Initialize all the symbols
 		write("#Initialize all the variables\n");
-		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) { 
+		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
 			if (!(element instanceof Feature)) {
-			  StringBuffer variable = new StringBuffer();
-			  variable.append(modifyName(element.getName()));
-			  variable.append(Equal);
-			  variable.append("Symbol");
-			  variable.append(LeftBracker);
-			  variable.append("'");
-			  variable.append(modifyName(element.getName()));
-			  variable.append("'");
-			  variable.append(RightBracker);
-			  write(variable.toString());
-			  write("\n");
+				StringBuffer variable = new StringBuffer();
+				variable.append(modifyName(element.getName()));
+				variable.append(Equal);
+				variable.append("Symbol");
+				variable.append(LeftBracker);
+				variable.append("'");
+				variable.append(modifyName(element.getName()));
+				variable.append("'");
+				variable.append(RightBracker);
+				write(variable.toString());
+				write("\n");
 			}
 		}
-		
+
 		// iterate all the leaf element
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
-		if (!(element instanceof Feature)) {
-			eleFormula = new StringBuffer();
-			function = new StringBuffer();
-			function.append(modifyName(element.getName()));
-			// if the element is the leaf
-			if (element.getLinksDest().size() == 0) {
-				if (element.getType().getName().compareTo("Indicator") == 0) {
-					if (getIndicatorValues(element) != null) {
-						String[] indicatorValues = getIndicatorValues(element);
-						// if worst and target values are equal
-						if (indicatorValues[0].equals(indicatorValues[2])) {
-							eleFormula.append(modifyName(element.getName()));
-						} else {
-							StringBuffer indicatorFor = indicatorFor(indicatorValues, element.getName());
-							eleFormula.append(indicatorFor);
-							function.append(Equal);
-							function.append(eleFormula);
+			if (!(element instanceof Feature)) {
+				eleFormula = new StringBuffer();
+				function = new StringBuffer();
+				function.append(modifyName(element.getName()));
+				// if the element is the leaf
+				if (element.getLinksDest().size() == 0) {
+					if (element.getType().getName().compareTo("Indicator") == 0) {
+						if (getIndicatorValues(element) != null) {
+							String[] indicatorValues = getIndicatorValues(element);
+							// if worst and target values are equal
+							if (indicatorValues[0].equalsIgnoreCase("S")
+									&& indicatorValues[1].equals(indicatorValues[3])) {
+								eleFormula.append(modifyName(element.getName()));
+							} else if (indicatorValues[0].equalsIgnoreCase("F")) {
+								indicatorValues[1] = indicatorValues[1].replaceAll("current",
+										modifyName(element.getName()));
+								eleFormula.append(indicatorValues[1]);
+								function.append(Equal);
+								function.append(eleFormula);
+							} else {
+								StringBuffer indicatorFor = indicatorFor(indicatorValues, element.getName());
+								eleFormula.append(indicatorFor);
+								function.append(Equal);
+								function.append(eleFormula);
+							}
 						}
+					} else {
+						eleFormula.append(modifyName(element.getName()));
 					}
-				} else {
-					eleFormula.append(modifyName(element.getName()));
+					elementSet.add("'" + modifyName(element.getName()) + "'");
+					eleForMap.put(element, eleFormula);
 				}
-				elementSet.add("'" + modifyName(element.getName()) + "'");
-				eleForMap.put(element, eleFormula);
 			}
 		}
-		}
-		
+
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
 			if (!(element instanceof Feature)) {
-			  eleFormula = new StringBuffer();
-			  function = new StringBuffer();
-			  function.append(modifyName(element.getName()));
+				eleFormula = new StringBuffer();
+				function = new StringBuffer();
+				function.append(modifyName(element.getName()));
 
-			 if (element.getLinksDest().size() != 0) {
-				 eleFormula.append(writeLink(element));
-				 function.append(Equal);
-				 function.append(eleFormula);
-				 write(function.toString());
-				 write("\n");
-				 eleForMap.put(element, eleFormula);
-			 }
-		  }
+				if (element.getLinksDest().size() != 0) {
+					eleFormula.append(writeLink(element));
+					function.append(Equal);
+					function.append(eleFormula);
+					write(function.toString());
+					write("\n");
+					eleForMap.put(element, eleFormula);
+				}
+			}
 		}
 	}
 
@@ -292,7 +300,7 @@ public class ExportGRLMath implements IURNExport {
 			conFor.append(LeftBracker);
 			List<String> conTimesList = new ArrayList<String>();
 			for (int i = 0; i < conLink.size(); i++) {
-				//System.out.println("contribution ele:" + conList.get(i).getName());
+				// System.out.println("contribution ele:" + conList.get(i).getName());
 				String conTimes = new String();
 				conTimes = Integer.toString(((Contribution) conLink.get(i)).getQuantitativeContribution()) + Times
 						+ modifyName(conList.get(i).getName());
@@ -395,7 +403,8 @@ public class ExportGRLMath implements IURNExport {
 		return formula;
 	}
 
-	private StringBuffer writeDepenMaxMin(List<IntentionalElement> list, StringBuffer func, IntentionalElement element) throws IOException {
+	private StringBuffer writeDepenMaxMin(List<IntentionalElement> list, StringBuffer func, IntentionalElement element)
+			throws IOException {
 
 		StringBuffer formula = new StringBuffer();
 		Stack<StringBuffer> st = new Stack<StringBuffer>();
@@ -643,14 +652,13 @@ public class ExportGRLMath implements IURNExport {
 
 	}
 
-	
 	private StringBuffer indicatorFor(String[] indicatorValues, String indicatorName) throws IOException {
 		StringBuffer formula = new StringBuffer();
 		String currentName = new String(modifyName(indicatorName));
-		double worst = Double.parseDouble(indicatorValues[2]);	
-		double target = Double.parseDouble(indicatorValues[0]);
-		double threshold = Double.parseDouble(indicatorValues[1]);
-		
+		double worst = Double.parseDouble(indicatorValues[3]);
+		double target = Double.parseDouble(indicatorValues[1]);
+		double threshold = Double.parseDouble(indicatorValues[2]);
+
 		formula = new StringBuffer();
 		formula.append("Piecewise");
 		formula.append(LeftBracker);
@@ -787,7 +795,7 @@ public class ExportGRLMath implements IURNExport {
 			formula.append(Double.toString(threshold));
 			formula.append(RightBracker);
 			formula.append(Divide);
-			double diNum2 = (threshold- worst); // (worst - threshold); * 200; changed by Amal
+			double diNum2 = (threshold - worst); // (worst - threshold); * 200; changed by Amal
 			formula.append(Double.toString(diNum2));
 			formula.append(RightBracker);
 			formula.append(Multi); // added by Amal
@@ -830,7 +838,7 @@ public class ExportGRLMath implements IURNExport {
 		write("modelName " + Equal + " '" + modifyName(urn.getName()) + "' " + "\n");
 		StringBuffer varList = new StringBuffer();
 		varList.append("List");
-		//varList.append(urn.getName());
+		// varList.append(urn.getName());
 		varList.append(Equal);
 		varList.append("[");
 		List<String> eleList = new ArrayList<String>();
@@ -852,7 +860,7 @@ public class ExportGRLMath implements IURNExport {
 		tranScript.append("modelName");// model's name
 		tranScript.append(Comma);
 		tranScript.append("List");
-		//tranScript.append(urn.getName());
+		// tranScript.append(urn.getName());
 		tranScript.append(Comma);
 		tranScript.append("LANG");
 		tranScript.append(RightBracker);
@@ -864,13 +872,13 @@ public class ExportGRLMath implements IURNExport {
 		allprint.append("\t\tLANG = str(j)\n");
 		allprint.append("\t\t" + tranScript + "\n");
 		write(allprint.toString());
-		StringBuffer scriptLang = new StringBuffer("if(len(sys.argv)==1):\n" + "\tallPrint()\n" + "else:\n"
-				+ "\tfor i in sys.argv:\n" + "\t\tif(sys.argv.index(i)==0):continue\n"
-				+ "\t\tif  (i.lower() not in langList):\n" + "\t\t\tfor j in langList:\n"+"\t\t\t\t"
-						+ "LANG = str(j)\n" + "\t\t\t\t" + "allPrint()"
-				+ "\n" + "\t\telse:\n" + "\t\t\tprint 'in'\n" + "\t\t\tLANG = str(i.lower())\n"
-				// +"\t\t\tprint LANG\n"
-				+ "\t\t\t" + tranScript + "\n");
+		StringBuffer scriptLang = new StringBuffer(
+				"if(len(sys.argv)==1):\n" + "\tallPrint()\n" + "else:\n" + "\tfor i in sys.argv:\n"
+						+ "\t\tif(sys.argv.index(i)==0):continue\n" + "\t\tif  (i.lower() not in langList):\n"
+						+ "\t\t\tfor j in langList:\n" + "\t\t\t\t" + "LANG = str(j)\n" + "\t\t\t\t" + "allPrint()"
+						+ "\n" + "\t\telse:\n" + "\t\t\tprint 'in'\n" + "\t\t\tLANG = str(i.lower())\n"
+						// +"\t\t\tprint LANG\n"
+						+ "\t\t\t" + tranScript + "\n");
 		write(scriptLang.toString());
 
 	}
@@ -893,5 +901,5 @@ public class ExportGRLMath implements IURNExport {
 
 		return name;
 	}
-	
+
 }
