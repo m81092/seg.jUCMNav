@@ -465,7 +465,7 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 
 	
 
-	private StringBuffer MaxmaxFormat(Stack<StringBuffer> subst, String func) throws IOException {
+	public StringBuffer MaxmaxFormat(Stack<StringBuffer> subst, String func) throws IOException {
 		Stack<StringBuffer> stMax = new Stack<StringBuffer>();
 		int stSize = subst.size();
 		if (stSize == 1) {
@@ -810,7 +810,7 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 
 	}
 
-	private String modifyName(String name) throws IOException {
+	public String modifyName(String name) throws IOException {
 
 		name = name.toLowerCase();
 		name = name.substring(0, 1).toUpperCase() + name.substring(1);
