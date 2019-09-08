@@ -54,6 +54,7 @@ public class ExportGRLMath implements IURNExport {
 	public static final String PLUS = " + ";
 	public static final String MINUS = " - ";
 	public static final String MULTI = " * ";
+	public static final String SPACE = " ";
 	public static final String KPI = "KPI";
 
 	// store elements and the functions
@@ -183,11 +184,46 @@ public class ExportGRLMath implements IURNExport {
 		return false;
 	}
 
-	private void writeIndicatorFunction(IntentionalElement element) throws IOException {
+	/**
+	 * Writes indicator function to the file
+	 * 
+	 * @param element
+	 * @param elementFormula
+	 * @throws IOException
+	 */
+	private void writeIndicatorFunction(IntentionalElement element, StringBuffer elementFormula)
+			throws IOException {
 		write("# Indicator function\n");
-		write();
+		String[] indicatorValues = getIndicatorValues(element);
+		// if worst and target values are equal
+		if (indicatorValues[0].equalsIgnoreCase("S") && indicatorValues[1].equals(indicatorValues[3])) {
+			// TODO: need correct formula here
+			elementFormula.append(modifyName(element.getName()));
+		} else if (indicatorValues[0].equalsIgnoreCase("B")) {
+			elementFormula.append(LEFT_BRACKET);
+			//elementFormula.append(SPACE);
+			elementFormula.append("100");
+			elementFormula.append(SPACE);
+			elementFormula.append("if");
+			elementFormula.append(SPACE);
+			elementFormula.append(indicatorValues[1]);
+			elementFormula.append(SPACE);
+			elementFormula.append("else");
+			elementFormula.append(SPACE);
+			elementFormula.append("0");
+			elementFormula.append(RIGHT_BRACKET);
+		} else if (indicatorValues[0].equalsIgnoreCase("F")) {
+			indicatorValues[1] = indicatorValues[1].replaceAll("current", modifyName(element.getName()));
+			elementFormula.append(indicatorValues[1]);
+		} else {
+			StringBuffer indicatorFor = indicatorFor(indicatorValues, element.getName());
+			elementFormula.append(indicatorFor);
+		}
+		write(FeatureExport.modifyName(element.getName()) + EQUALS);
+		write(elementFormula.toString());
+		write("\n");
 	}
-	
+
 	/**
 	 * Create formulas for each element
 	 * 
@@ -228,29 +264,12 @@ public class ExportGRLMath implements IURNExport {
 				// if the element is leaf element
 				if (element.getLinksDest().size() == 0) {
 					if (element.getType().getName().compareTo("Indicator") == 0) {
-						writeIndicatorFunction(element);
 						if (getIndicatorValues(element) != null) {
-							String[] indicatorValues = getIndicatorValues(element);
-							// if worst and target values are equal
-							if (indicatorValues[0].equalsIgnoreCase("S") && indicatorValues[1].equals(indicatorValues[3])) {
-								//TODO: need correct formula here
-								elementFormula.append(modifyName(element.getName()));
-							} else if (indicatorValues[0].equalsIgnoreCase("B")) {
-								//TODO
-							} else if (indicatorValues[0].equalsIgnoreCase("F")) {
-								indicatorValues[1] = indicatorValues[1].replaceAll("current", modifyName(element.getName()));
-								elementFormula.append(indicatorValues[1]);
-								function.append(EQUALS);
-								function.append(elementFormula);
-							} else {
-								StringBuffer indicatorFor = indicatorFor(indicatorValues, element.getName());
-								System.out.println("indicatorFor for S= "+indicatorFor.toString());
-								elementFormula.append(indicatorFor);
-								System.out.println("elementFormula for S= "+elementFormula.toString());
-								function.append(EQUALS);
-								function.append(elementFormula);
-								System.out.println("function for S= "+function.toString());
-							}
+							writeIndicatorFunction(element, elementFormula);
+							function.append(EQUALS);
+							function.append(elementFormula);
+						} else {
+							// TODO: if we don't provide metadata
 						}
 					} else {
 						elementFormula.append(FeatureExport.modifyName(element.getName()));
@@ -260,6 +279,7 @@ public class ExportGRLMath implements IURNExport {
 				}
 			}
 		}
+		write("# non-leaf element functions\n");
 		// checking the non leaf elements and adding the link
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
@@ -556,7 +576,7 @@ public class ExportGRLMath implements IURNExport {
 			}
 			function.append(EQUALS);
 			function.append(formula);
-			write("#Actor function\n");
+			write("# Actor function\n");
 			System.out.println("Actoooooooooooooooooooor: " + function.toString());
 			write(function.toString());
 			write("\n");
@@ -630,7 +650,7 @@ public class ExportGRLMath implements IURNExport {
 
 		}
 		function.append(modelFormula);
-		write("#The function of Model\n");
+		write("# The function of Model\n");
 		write(function.toString());
 		write("\n");
 	}
@@ -912,7 +932,7 @@ public class ExportGRLMath implements IURNExport {
 		// String message = String.join("-", list); 
 		varList.append(String.join(",", eleList));
 		varList.append("]");
-		write("\n#variable list");
+		write("\n# variable list");
 		write("\n");
 		write(varList.toString());
 
