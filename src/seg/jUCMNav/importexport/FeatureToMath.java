@@ -205,7 +205,7 @@ public class FeatureToMath   {
 	}
 	
 	// check leaf features
-		private boolean IsItLeaf(IntentionalElement element) throws IOException {
+		public boolean IsItLeaf(IntentionalElement element) throws IOException {
 			// feature has indicator only should consider as leaf feature
 			if (element.getLinksDest().size() != 0){
 			Iterator it2 = element.getLinksDest().iterator(); it2.hasNext(); 

@@ -48,7 +48,7 @@ public class ExportGRLMath implements IURNExport {
 	public static final String RIGHT_BRACKET = ")";
 	public static final String COMMA = " , ";
 	public static final String EQUALS = " = ";
-	public static final String SYMBOLS = "symbols";
+	public static final String SYMBOL = "symbol";
 	public static final String TIMES = "*";
 	public static final String DIVIDE = " / ";
 	public static final String PLUS = " + ";
@@ -56,6 +56,9 @@ public class ExportGRLMath implements IURNExport {
 	public static final String MULTI = " * ";
 	public static final String SPACE = " ";
 	public static final String KPI = "KPI";
+	public static final String PIECEWISE = "Piecewise";
+	public static final String MIN = "Min";
+	public static final String MAX = "Max";
 
 	// store elements and the functions
 	private Map<IntentionalElement, StringBuffer> elementMap;
@@ -185,7 +188,7 @@ public class ExportGRLMath implements IURNExport {
 	}
 
 	/**
-	 * Writes indicator function to the file
+	 * Writes indicator function to the the elementFormula
 	 * 
 	 * @param element
 	 * @param elementFormula
@@ -193,35 +196,23 @@ public class ExportGRLMath implements IURNExport {
 	 */
 	private void writeIndicatorFunction(IntentionalElement element, StringBuffer elementFormula)
 			throws IOException {
-		write("# Indicator function\n");
 		String[] indicatorValues = getIndicatorValues(element);
 		// if worst and target values are equal
 		if (indicatorValues[0].equalsIgnoreCase("S") && indicatorValues[1].equals(indicatorValues[3])) {
 			// TODO: need correct formula here
-			elementFormula.append(modifyName(element.getName()));
+			elementFormula.append(FeatureExport.modifyName(element.getName()));
 		} else if (indicatorValues[0].equalsIgnoreCase("B")) {
+			// TODO: piecewise here
+			elementFormula.append(PIECEWISE);
 			elementFormula.append(LEFT_BRACKET);
-			//elementFormula.append(SPACE);
-			elementFormula.append("100");
-			elementFormula.append(SPACE);
-			elementFormula.append("if");
-			elementFormula.append(SPACE);
-			elementFormula.append(indicatorValues[1]);
-			elementFormula.append(SPACE);
-			elementFormula.append("else");
-			elementFormula.append(SPACE);
-			elementFormula.append("0");
-			elementFormula.append(RIGHT_BRACKET);
+			
 		} else if (indicatorValues[0].equalsIgnoreCase("F")) {
-			indicatorValues[1] = indicatorValues[1].replaceAll("current", modifyName(element.getName()));
+			indicatorValues[1] = indicatorValues[1].replaceAll("current", FeatureExport.modifyName(element.getName()));
 			elementFormula.append(indicatorValues[1]);
 		} else {
 			StringBuffer indicatorFor = indicatorFor(indicatorValues, element.getName());
 			elementFormula.append(indicatorFor);
 		}
-		write(FeatureExport.modifyName(element.getName()) + EQUALS);
-		write(elementFormula.toString());
-		write("\n");
 	}
 
 	/**
@@ -243,7 +234,7 @@ public class ExportGRLMath implements IURNExport {
 				StringBuffer variable = new StringBuffer();
 				variable.append(FeatureExport.modifyName(element.getName()));
 				variable.append(EQUALS);
-				variable.append("Symbol");
+				variable.append(SYMBOL);
 				variable.append(LEFT_BRACKET);
 				variable.append("'");
 				variable.append(FeatureExport.modifyName(element.getName()));
@@ -254,6 +245,7 @@ public class ExportGRLMath implements IURNExport {
 			}
 		}
 
+		write("# Indicator function\n");
 		// iterate all the leaf elements (for now checking just indicators)
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
@@ -271,6 +263,9 @@ public class ExportGRLMath implements IURNExport {
 						} else {
 							// TODO: if we don't provide metadata
 						}
+						write(FeatureExport.modifyName(element.getName()) + EQUALS);
+						write(elementFormula.toString());
+						write("\n");
 					} else {
 						elementFormula.append(FeatureExport.modifyName(element.getName()));
 					}
@@ -279,8 +274,10 @@ public class ExportGRLMath implements IURNExport {
 				}
 			}
 		}
-		write("# non-leaf element functions\n");
+		
+		write("# Non-leaf element functions\n");
 		// checking the non leaf elements and adding the link
+		
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
 			if (isGRLElement(element)) {
@@ -345,29 +342,29 @@ public class ExportGRLMath implements IURNExport {
 		String funcTpye = " ";
 		if (!decomList.isEmpty()) {
 			if (element.getDecompositionType().getName() == "And")
-				funcTpye = "Min";
+				funcTpye = MIN;
 			if (element.getDecompositionType().getName() == "Or")
-				funcTpye = "Max";
+				funcTpye = MAX;
 			if (element.getDecompositionType().getName() == "Xor")
-				funcTpye = "Max";
+				funcTpye = MAX;
 
 			decomFor.append(writeDecomMaxMin(decomList, funcTpye));
 			formula = decomFor;
 		}
 
 		if (!conList.isEmpty()) {
-			conFor.append("Max");
+			conFor.append(MAX);
 			conFor.append(LEFT_BRACKET);
 			conFor.append("0.0");
 			conFor.append(COMMA);
-			conFor.append("Min");
+			conFor.append(MIN);
 			conFor.append(LEFT_BRACKET);
 			conFor.append("100.0");
 			conFor.append(COMMA);
 			conFor.append(LEFT_BRACKET);
 			List<String> conTimesList = new ArrayList<String>();
 			for (int i = 0; i < conLink.size(); i++) {
-				//// System.out.println("contributuin ele:" + conList.get(i).getName());
+				// System.out.println("contributuin ele:" + conList.get(i).getName());
 				String conTimes = new String();
 				conTimes = Integer.toString(((Contribution) conLink.get(i)).getQuantitativeContribution()) + TIMES
 						+ FeatureExport.modifyName(conList.get(i).getName());
@@ -417,7 +414,7 @@ public class ExportGRLMath implements IURNExport {
 				} else {
 					indicatorFor = elementMap.get(subEle);
 					formula = new StringBuffer(
-							formula.toString().replaceAll(modifyName(subEle.getName()), indicatorFor.toString()));
+							formula.toString().replaceAll(FeatureExport.modifyName(subEle.getName()), indicatorFor.toString()));
 				}
 			}
 		}
@@ -462,7 +459,7 @@ public class ExportGRLMath implements IURNExport {
 			StringBuffer subfo = new StringBuffer(FeatureExport.modifyName(list.get(i).getName()));
 			st.add(subfo);
 		}
-		formula.append(FeatureExport.MaxmaxFormat(st, "Min"));
+		formula.append(FeatureExport.MaxmaxFormat(st, MIN));
 		return formula;
 	}
 
@@ -497,7 +494,7 @@ public class ExportGRLMath implements IURNExport {
 				Iterator itIEref = actorRef.getNodes().iterator();
 				if (!itIEref.hasNext()) {
 					hasEleInActor = false;
-					System.out.println("NOOOOOOOElement");
+					// System.out.println("NOOOOOOOElement");
 				} else {
 					hasEleInActor = true;
 					for (; itIEref.hasNext();) {
@@ -509,7 +506,7 @@ public class ExportGRLMath implements IURNExport {
 						IntentionalElement ele = (IntentionalElement) ((IntentionalElementRef) node).getDef();
 						eleList.add(ele);
 						int eleQua = ele.getImportanceQuantitative();
-						System.out.println("Element haaaaaaaaaaas wait=" + ele.getName() + " Q= " + ele.getImportanceQuantitative());
+						// System.out.println("Element haaaaaaaaaaas wait=" + ele.getName() + " Q= " + ele.getImportanceQuantitative());
 						quaList.add(eleQua);
 						sumQua += eleQua;
 					}
@@ -518,7 +515,7 @@ public class ExportGRLMath implements IURNExport {
 
 			if (sumQua == 0 && hasEleInActor == true) {
 				// there are no weighted elements in actor
-				System.out.println("sum ================================== 0 ");
+				// System.out.println("sum ================================== 0 ");
 				for (int i = 0; i < eleList.size(); i++) {
 					IntentionalElement ele = (IntentionalElement) (eleList.get(i));
 					StringBuffer eleFormula = new StringBuffer();
@@ -528,18 +525,16 @@ public class ExportGRLMath implements IURNExport {
 					if (ele.getLinksSrc().size() == 0) {
 
 						actorTimesQua.add(eleFormula + TIMES + "100.0");
-						System.out.println(
-								"Element haaaaaaaaaaas wait in first sum=" + ele.getName() + " Q=" + ele.getImportanceQuantitative());
+						 //System.out.println("Element haaaaaaaaaaas wait in first sum=" + ele.getName() + " Q=" + ele.getImportanceQuantitative());
 						sumQua += 100;
 					} else {
 						// give the weight to top-level elements;
-						System.out.println("give the weight to top-level elements");
+						// System.out.println("give the weight to top-level elements");
 						IntentionalElement srcElement = (IntentionalElement) (((ElementLink) (ele.getLinksSrc().get(0))).getDest());
 
 						if (eleList.contains(srcElement) == false) {
 							actorTimesQua.add(eleFormula + TIMES + "100.0");
-							System.out.println("Element haaaaaaaaaaas wait in thae last sum=" + ele.getName() + " Q="
-									+ ele.getImportanceQuantitative());
+							 // System.out.println("Element haaaaaaaaaaas wait in thae last sum=" + ele.getName() + " Q="+ ele.getImportanceQuantitative());
 							sumQua += 100;
 						}
 					}
@@ -563,8 +558,7 @@ public class ExportGRLMath implements IURNExport {
 				formula.append("0");
 			else {
 				formula.append(LEFT_BRACKET);
-				System.out.println(
-						"Actoooooooooooooooooooor actortimequantity: " + actorTimesQua + " Sum=" + sumQua + " dNum=" + dNum);
+				// System.out.println("Actoooooooooooooooooooor actortimequantity: " + actorTimesQua + " Sum=" + sumQua + " dNum=" + dNum);
 				String joined = String.join("+", actorTimesQua);
 				System.out.println(joined);
 				formula.append(joined);
@@ -577,7 +571,7 @@ public class ExportGRLMath implements IURNExport {
 			function.append(EQUALS);
 			function.append(formula);
 			write("# Actor function\n");
-			System.out.println("Actoooooooooooooooooooor: " + function.toString());
+			// System.out.println("Actoooooooooooooooooooor: " + function.toString());
 			write(function.toString());
 			write("\n");
 			actorMap.put(actor, formula);
@@ -642,10 +636,8 @@ public class ExportGRLMath implements IURNExport {
 
 			modelFormula.append(LEFT_BRACKET);
 			modelFormula.append(joined);
-
 			modelFormula.append(RIGHT_BRACKET);
 			modelFormula.append(DIVIDE);
-
 			modelFormula.append(Integer.toString(Math.max(sumQua, dNum)));
 
 		}
@@ -712,10 +704,8 @@ public class ExportGRLMath implements IURNExport {
 		formula.append(LEFT_BRACKET);
 		String joined = String.join("+ ", actorTimesQua);
 		formula.append(joined);
-
 		formula.append(RIGHT_BRACKET);
 		formula.append(DIVIDE);
-
 		formula.append(Integer.toString(Math.max(sumQua, dNum)));
 
 		return formula;
@@ -724,17 +714,17 @@ public class ExportGRLMath implements IURNExport {
 
 	private StringBuffer indicatorFor(String[] indicatorValues, String indicatorName) throws IOException {
 		StringBuffer formula = new StringBuffer();
-		String currentName = new String(modifyName(indicatorName));
+		String currentName = new String(FeatureExport.modifyName(indicatorName));
 		double worst = Double.parseDouble(indicatorValues[3]);
 		double target = Double.parseDouble(indicatorValues[1]);
 		double threshold = Double.parseDouble(indicatorValues[2]);
 		formula = new StringBuffer();
-		formula.append("Piecewise");
+		formula.append(PIECEWISE);
 		formula.append(LEFT_BRACKET);
 		if ((worst == threshold) && (threshold == target)) {
 			// warning-- can we throw an Exception?
 			System.out.println("Warning: the three value should not be equal");
-			throw new IOException("The three KPI values cannot be equal");
+			// throw new IOException("The three KPI values cannot be equal");
 		}
 		if (worst < target) {
 			formula.append(LEFT_BRACKET);
@@ -968,22 +958,4 @@ public class ExportGRLMath implements IURNExport {
 		write(scriptLang.toString() + "\n");
 
 	}
-
-	private String modifyName(String name) throws IOException {
-		name = name.toLowerCase();
-		name = name.substring(0, 1).toUpperCase() + name.substring(1);
-		if (name.length() > 1) {
-			name = name.substring(0, name.length() - 1) + name.substring(name.length() - 1).toUpperCase();
-		}
-
-		name = name.replaceAll("[\\s]+", "_");
-		name = name.replaceAll("[^a-zA-Z0-9\\_]+", "");
-		Pattern pattern = Pattern.compile("^[0-9]");
-		Matcher matcher = pattern.matcher(name);
-		while (matcher.find()) {
-			name = "_" + name;
-		}
-		return name;
-	}
-
 }
