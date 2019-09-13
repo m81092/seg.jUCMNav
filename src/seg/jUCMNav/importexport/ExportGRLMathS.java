@@ -41,11 +41,12 @@ public class ExportGRLMathS implements IURNExport {
 	private String GRLname;
 	FeatureToMath FeatureExport = new FeatureToMath();
 	private FileOutputStream fos;
+	// declaring string constants
 	public static final String LEFT_BRACKET = "(";
 	public static final String RIGHT_BRACKET = ")";
 	public static final String COMMA = " , ";
 	public static final String EQUALS = " = ";
-	public static final String SYMBOL = "symbol";
+	public static final String SYMBOL = "Symbol";
 	public static final String TIMES = "*";
 	public static final String DIVIDE = " / ";
 	public static final String PLUS = " + ";
@@ -55,6 +56,7 @@ public class ExportGRLMathS implements IURNExport {
 	public static final String KPI = "KPI";
 	public static final String MIN = "Min";
 	public static final String MAX = "Max";
+	public static final String PIECEWISE = "Piecewise";
 
 	// store elements and the functions
 	private Map<IntentionalElement, StringBuffer> elementMap;
@@ -199,7 +201,20 @@ public class ExportGRLMathS implements IURNExport {
 			// TODO: need correct formula here
 			elementFormula.append(FeatureExport.modifyName(element.getName()));
 		} else if (indicatorValues[0].equalsIgnoreCase("B")) {
-			// TODO: piecewise here
+			elementFormula.append(PIECEWISE);
+			elementFormula.append(LEFT_BRACKET);
+			elementFormula.append(LEFT_BRACKET);
+			elementFormula.append("100");
+			elementFormula.append(COMMA);
+			elementFormula.append(indicatorValues[1].replaceAll("[a-zA-Z]+", FeatureExport.modifyName(element.getName())));
+			elementFormula.append(RIGHT_BRACKET);
+			elementFormula.append(COMMA);
+			elementFormula.append(LEFT_BRACKET);
+			elementFormula.append("0");
+			elementFormula.append(COMMA);
+			elementFormula.append("True");
+			elementFormula.append(RIGHT_BRACKET);
+			elementFormula.append(RIGHT_BRACKET);
 			elementFormula.append("Piecewise");
 		} else if (indicatorValues[0].equalsIgnoreCase("F")) {
 			indicatorValues[1] = indicatorValues[1].replaceAll("current", FeatureExport.modifyName(element.getName()));
@@ -751,7 +766,7 @@ public class ExportGRLMathS implements IURNExport {
 		double target = Double.parseDouble(indicatorValues[1]);
 		double threshold = Double.parseDouble(indicatorValues[2]);
 		formula = new StringBuffer();
-		formula.append("Piecewise");
+		formula.append(PIECEWISE);
 		formula.append(LEFT_BRACKET);
 		if ((worst == threshold) && (threshold == target)) {
 			// warning-- can we throw an Exception?

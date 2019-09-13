@@ -43,12 +43,12 @@ public class ExportGRLMath implements IURNExport {
 	private String GRLname;
 	FeatureToMath FeatureExport = new FeatureToMath();
 	private FileOutputStream fos;
-	// declaring constants
+	// declaring string constants
 	public static final String LEFT_BRACKET = "(";
 	public static final String RIGHT_BRACKET = ")";
 	public static final String COMMA = " , ";
 	public static final String EQUALS = " = ";
-	public static final String SYMBOL = "symbol";
+	public static final String SYMBOL = "Symbol";
 	public static final String TIMES = "*";
 	public static final String DIVIDE = " / ";
 	public static final String PLUS = " + ";
@@ -199,13 +199,23 @@ public class ExportGRLMath implements IURNExport {
 		String[] indicatorValues = getIndicatorValues(element);
 		// if worst and target values are equal
 		if (indicatorValues[0].equalsIgnoreCase("S") && indicatorValues[1].equals(indicatorValues[3])) {
-			// TODO: need correct formula here
+			// TODO: revisit case of worst = target
 			elementFormula.append(FeatureExport.modifyName(element.getName()));
 		} else if (indicatorValues[0].equalsIgnoreCase("B")) {
-			// TODO: piecewise here
 			elementFormula.append(PIECEWISE);
 			elementFormula.append(LEFT_BRACKET);
-			
+			elementFormula.append(LEFT_BRACKET);
+			elementFormula.append("100");
+			elementFormula.append(COMMA);
+			elementFormula.append(indicatorValues[1].replaceAll("[a-zA-Z]+", FeatureExport.modifyName(element.getName())));
+			elementFormula.append(RIGHT_BRACKET);
+			elementFormula.append(COMMA);
+			elementFormula.append(LEFT_BRACKET);
+			elementFormula.append("0");
+			elementFormula.append(COMMA);
+			elementFormula.append("True");
+			elementFormula.append(RIGHT_BRACKET);
+			elementFormula.append(RIGHT_BRACKET);
 		} else if (indicatorValues[0].equalsIgnoreCase("F")) {
 			indicatorValues[1] = indicatorValues[1].replaceAll("current", FeatureExport.modifyName(element.getName()));
 			elementFormula.append(indicatorValues[1]);
