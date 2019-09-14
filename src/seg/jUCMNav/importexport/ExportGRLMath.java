@@ -486,27 +486,26 @@ public class ExportGRLMath implements IURNExport {
 		actorMap = new HashMap<Actor, StringBuffer>();
 		StringBuffer formula;
 		StringBuffer function;
-		int sumQua = 0;
+		int quantSum = 0;
 		int dNum = 100;
 		for (Iterator it = urn.getGrlspec().getActors().iterator(); it.hasNext();) {
 			Actor actor = (Actor) it.next();
 			function = new StringBuffer();
 			function.append(FeatureExport.modifyName(actor.getName()));
 			formula = new StringBuffer();// the part after =
-			sumQua = 0;
+			quantSum = 0;
 			dNum = 100;
-			boolean hasEleInActor = true;
+			boolean hasElementInActor = true;
 			List<IntentionalElement> eleList = new ArrayList<IntentionalElement>();// the elements in the actor
 			List<Integer> quaList = new ArrayList<Integer>();
-			List<String> actorTimesQua = new ArrayList<String>();
+			List<String> actorTimesWeight = new ArrayList<String>();
 			for (Iterator itAct = actor.getContRefs().iterator(); itAct.hasNext();) {
 				ActorRef actorRef = (ActorRef) itAct.next();
 				Iterator itIEref = actorRef.getNodes().iterator();
 				if (!itIEref.hasNext()) {
-					hasEleInActor = false;
-					// System.out.println("NOOOOOOOElement");
+					hasElementInActor = false;
 				} else {
-					hasEleInActor = true;
+					hasElementInActor = true;
 					for (; itIEref.hasNext();) {
 						IURNNode node = (IURNNode) itIEref.next();
 						if (node instanceof Belief) {
@@ -516,16 +515,14 @@ public class ExportGRLMath implements IURNExport {
 						IntentionalElement ele = (IntentionalElement) ((IntentionalElementRef) node).getDef();
 						eleList.add(ele);
 						int eleQua = ele.getImportanceQuantitative();
-						// System.out.println("Element haaaaaaaaaaas wait=" + ele.getName() + " Q= " + ele.getImportanceQuantitative());
 						quaList.add(eleQua);
-						sumQua += eleQua;
+						quantSum += eleQua;
 					}
 				}
 			}
 
-			if (sumQua == 0 && hasEleInActor == true) {
+			if (quantSum == 0 && hasElementInActor == true) {
 				// there are no weighted elements in actor
-				// System.out.println("sum ================================== 0 ");
 				for (int i = 0; i < eleList.size(); i++) {
 					IntentionalElement ele = (IntentionalElement) (eleList.get(i));
 					StringBuffer eleFormula = new StringBuffer();
@@ -533,55 +530,43 @@ public class ExportGRLMath implements IURNExport {
 					eleFormula.append(elementMap.get(ele));
 					eleFormula.append(RIGHT_BRACKET);
 					if (ele.getLinksSrc().size() == 0) {
-
-						actorTimesQua.add(eleFormula + TIMES + "100.0");
-						 //System.out.println("Element haaaaaaaaaaas wait in first sum=" + ele.getName() + " Q=" + ele.getImportanceQuantitative());
-						sumQua += 100;
+						actorTimesWeight.add(eleFormula + TIMES + "100.0");
+						quantSum += 100;
 					} else {
 						// give the weight to top-level elements;
-						// System.out.println("give the weight to top-level elements");
 						IntentionalElement srcElement = (IntentionalElement) (((ElementLink) (ele.getLinksSrc().get(0))).getDest());
-
 						if (eleList.contains(srcElement) == false) {
-							actorTimesQua.add(eleFormula + TIMES + "100.0");
-							 // System.out.println("Element haaaaaaaaaaas wait in thae last sum=" + ele.getName() + " Q="+ ele.getImportanceQuantitative());
-							sumQua += 100;
+							actorTimesWeight.add(eleFormula + TIMES + "100.0");
+							quantSum += 100;
 						}
 					}
 				} // for
 			} // if(sumQua==0)
-			if (sumQua > 0) {
+			if (quantSum > 0) {
 				// there are some elements weighted
-				// System.out.println("sum! = 0 ");
-				System.out.println("there are some elements weighted" + sumQua);
+				System.out.println("there are some elements weighted" + quantSum);
 				for (int i = 0; i < eleList.size(); i++) {
 					IntentionalElement ele = (IntentionalElement) (eleList.get(i));
 					if (ele.getImportanceQuantitative() == 0) {
 						continue;
 					}
-					// actorTimesQua.add(eleForMap.get(ele) + Times + "800.0");
 
-					actorTimesQua.add(elementMap.get(ele) + TIMES + Integer.toString(ele.getImportanceQuantitative()));
+					actorTimesWeight.add(elementMap.get(ele) + TIMES + Integer.toString(ele.getImportanceQuantitative()));
 				}
 			}
-			if (!hasEleInActor)
+			if (!hasElementInActor)
 				formula.append("0");
 			else {
 				formula.append(LEFT_BRACKET);
-				// System.out.println("Actoooooooooooooooooooor actortimequantity: " + actorTimesQua + " Sum=" + sumQua + " dNum=" + dNum);
-				String joined = String.join("+", actorTimesQua);
-				System.out.println(joined);
+				String joined = String.join("+", actorTimesWeight);
 				formula.append(joined);
 				formula.append(RIGHT_BRACKET);
 				formula.append(DIVIDE);
-
-				formula.append(Integer.toString(Math.max(sumQua, dNum)));
-
+				formula.append(Integer.toString(Math.max(quantSum, dNum)));
 			}
 			function.append(EQUALS);
 			function.append(formula);
 			write("# Actor function\n");
-			// System.out.println("Actoooooooooooooooooooor: " + function.toString());
 			write(function.toString());
 			write("\n");
 			actorMap.put(actor, formula);

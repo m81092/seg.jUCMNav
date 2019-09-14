@@ -300,6 +300,7 @@ public class ExportGRLMathS implements IURNExport {
 
 				if (element.getLinksDest().size() != 0) {
 					elementFormula.append(writeLink(element));
+					System.out.println("\noutput from writeLink method--" + elementFormula);
 					function.append(EQUALS);
 					function.append(elementFormula);
 					write(function.toString());
@@ -322,7 +323,7 @@ public class ExportGRLMathS implements IURNExport {
 		StringBuffer decomFor = new StringBuffer();
 		StringBuffer conFor = new StringBuffer();
 		StringBuffer depenFor = new StringBuffer();
-		List<String> StrEle = new ArrayList<String>();// the elements' str
+		List<String> StrEle = new ArrayList<String>();// the element's string
 
 		Map<String, List<IntentionalElement>> eleMap = new HashMap<String, List<IntentionalElement>>();
 		List<IntentionalElement> decomList = new ArrayList<IntentionalElement>();
@@ -378,7 +379,6 @@ public class ExportGRLMathS implements IURNExport {
 			conFor.append(LEFT_BRACKET);
 			List<String> conTimesList = new ArrayList<String>();
 			for (int i = 0; i < conLink.size(); i++) {
-				// System.out.println("contribution element:" + conList.get(i).getName());
 				String conTimes = new String();
 				conTimes = Integer.toString(((Contribution) conLink.get(i)).getQuantitativeContribution()) + TIMES
 						+ FeatureExport.modifyName(conList.get(i).getName());
@@ -400,11 +400,9 @@ public class ExportGRLMathS implements IURNExport {
 		}
 		if (!depenList.isEmpty()) {
 			depenFor.append(writeDepenMaxMin(depenList, formula, element));
-			// System.out.println("In
-			// dependency"+FeatureExport.modifyName(element.getName())+"="+depenFor.toString());
 			formula = depenFor;
 		}
-		// System.out.println(formula);
+
 		for (Iterator it = srcList.iterator(); it.hasNext();) {
 			IntentionalElement subEle = (IntentionalElement) it.next();
 			// if sub element is not the leaf.
@@ -515,106 +513,84 @@ public class ExportGRLMathS implements IURNExport {
 		actorMap = new HashMap<Actor, StringBuffer>();
 		StringBuffer formula;
 		StringBuffer function;
-		int sumQua = 0;
+		int quantSum = 0;
 		int dNum = 100;
 		for (Iterator it = urn.getGrlspec().getActors().iterator(); it.hasNext();) {
 			Actor actor = (Actor) it.next();
 			function = new StringBuffer();
 			function.append(FeatureExport.modifyName(actor.getName()));
-			formula = new StringBuffer();// the part after =
-			sumQua = 0;
-			dNum = 100;
-			boolean hasEleInActor = true;
-			List<IntentionalElement> eleList = new ArrayList<IntentionalElement>();// the elements in the actor
-			List<Integer> quaList = new ArrayList<Integer>();
-			List<String> actorTimesQua = new ArrayList<String>();
+			formula = new StringBuffer(); // the part after =
+			boolean hasElementInActor = true;
+			List<IntentionalElement> elementList = new ArrayList<IntentionalElement>(); // the elements in the actor
+			List<Integer> quantList = new ArrayList<Integer>();
+			List<String> actorTimesWeight = new ArrayList<String>();
 			for (Iterator itAct = actor.getContRefs().iterator(); itAct.hasNext();) {
 				ActorRef actorRef = (ActorRef) itAct.next();
 				Iterator itIEref = actorRef.getNodes().iterator();
 				if (!itIEref.hasNext()) {
-					hasEleInActor = false;
-					// System.out.println("NOOOOOOOElement");
+					hasElementInActor = false;
 				} else {
-					hasEleInActor = true;
 					for (; itIEref.hasNext();) {
 						IURNNode node = (IURNNode) itIEref.next();
+						// skip for Belief
 						if (node instanceof Belief) {
 							continue;
 						}
 
-						IntentionalElement ele = (IntentionalElement) ((IntentionalElementRef) node).getDef();
-						eleList.add(ele);
-						int eleQua = ele.getImportanceQuantitative();
-						// System.out.println("Element haaaaaaaaaaas wait="+ele.getName()+"
-						// Q="+ele.getImportanceQuantitative());
-						quaList.add(eleQua);
-						sumQua += eleQua;
+						IntentionalElement element = (IntentionalElement) ((IntentionalElementRef) node).getDef();
+						elementList.add(element);
+						int elementImportance = element.getImportanceQuantitative();
+						quantList.add(elementImportance);
+						quantSum += elementImportance;
 					}
 				}
 			}
 
-			if (sumQua == 0 && hasEleInActor == true) {
-				// there are no weighted elements in actor
-				// System.out.println("sum ================================== 0 ");
-				for (int i = 0; i < eleList.size(); i++) {
-					IntentionalElement ele = (IntentionalElement) (eleList.get(i));
-					StringBuffer eleFormula = new StringBuffer();
-					eleFormula.append(LEFT_BRACKET);
-					eleFormula.append(elementMap.get(ele));
-					eleFormula.append(RIGHT_BRACKET);
-					if (ele.getLinksSrc().size() == 0) {
-
-						actorTimesQua.add(eleFormula + TIMES + "100.0");
-						// System.out.println("Element haaaaaaaaaaas wait in first sum="+ele.getName()+"
-						// Q="+ele.getImportanceQuantitative());
-						sumQua += 100;
+			// there are no weighted elements in actor
+			if (quantSum == 0 && hasElementInActor == true) {
+				for (int i = 0; i < elementList.size(); i++) {
+					IntentionalElement element = (IntentionalElement) (elementList.get(i));
+					StringBuffer elementFormula = new StringBuffer();
+					elementFormula.append(LEFT_BRACKET);
+					elementFormula.append(elementMap.get(element));
+					elementFormula.append(RIGHT_BRACKET);
+					if (element.getLinksSrc().size() == 0) {
+						actorTimesWeight.add(elementFormula + TIMES + "100.0");
+						quantSum += 100;
 					} else {
 						// give the weight to top-level elements;
-						// System.out.println("give the weight to top-level elements");
-						IntentionalElement srcElement = (IntentionalElement) (((ElementLink) (ele.getLinksSrc().get(0))).getDest());
-
-						if (eleList.contains(srcElement) == false) {
-							actorTimesQua.add(eleFormula + TIMES + "100.0");
-							// System.out.println("Element haaaaaaaaaaas wait in thae last
-							// sum="+ele.getName()+" Q="+ele.getImportanceQuantitative());
-							sumQua += 100;
+						IntentionalElement srcElement = (IntentionalElement) (((ElementLink) (element.getLinksSrc().get(0))).getDest());
+						if (elementList.contains(srcElement) == false) {
+							actorTimesWeight.add(elementFormula + TIMES + "100.0");
+							quantSum += 100;
 						}
 					}
 				} // for
 			} // if(sumQua==0)
-			if (sumQua > 0) {
+			if (quantSum > 0) {
 				// there are some elements weighted
-				// System.out.println("sum! = 0 ");
-				// System.out.println("there are some elements weighted"+sumQua);
-				for (int i = 0; i < eleList.size(); i++) {
-					IntentionalElement ele = (IntentionalElement) (eleList.get(i));
+				for (int i = 0; i < elementList.size(); i++) {
+					IntentionalElement ele = (IntentionalElement) (elementList.get(i));
 					if (ele.getImportanceQuantitative() == 0) {
 						continue;
 					}
-					// actorTimesQua.add(eleForMap.get(ele) + Times + "800.0");
 
-					actorTimesQua.add(elementMap.get(ele) + TIMES + Integer.toString(ele.getImportanceQuantitative()));
+					actorTimesWeight.add(elementMap.get(ele) + TIMES + Integer.toString(ele.getImportanceQuantitative()));
 				}
 			}
-			if (!hasEleInActor)
+			if (!hasElementInActor)
 				formula.append("0");
 			else {
 				formula.append(LEFT_BRACKET);
-				// System.out.println("Actoooooooooooooooooooor actortimequantity:
-				// "+actorTimesQua+" Sum="+sumQua+" dNum="+dNum);
-				String joined = String.join("+", actorTimesQua);
-				// System.out.println(joined);
+				String joined = String.join("+", actorTimesWeight);
 				formula.append(joined);
 				formula.append(RIGHT_BRACKET);
 				formula.append(DIVIDE);
-
-				formula.append(Integer.toString(Math.max(sumQua, dNum)));
-
+				formula.append(Integer.toString(Math.max(quantSum, dNum)));
 			}
 			function.append(EQUALS);
 			function.append(formula);
-			write("#Actor function\n");
-			// System.out.println("Actoooooooooooooooooooor: "+function.toString());
+			write("# Actor function\n");
 			write(function.toString());
 			write("\n");
 			actorMap.put(actor, formula);
