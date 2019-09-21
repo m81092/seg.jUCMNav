@@ -101,7 +101,9 @@ public class ExportGRLMathS implements IURNExport {
 				writeModel(urn);
 				writeTranslation(urn);
 			}
+			
 			FeatureExport.export(urn, mapDiagrams, filename);
+			
 		} catch (Exception e) {
 			throw new InvocationTargetException(e);
 		} finally {
@@ -393,8 +395,9 @@ public class ExportGRLMathS implements IURNExport {
 			conFor.append("100.0");
 			conFor.append(RIGHT_BRACKET);
 			conFor.append(RIGHT_BRACKET);
-
+			
 			formula = conFor;
+			System.out.println("in the writeLink method, formula-> "+formula);
 		}
 		if (!depenList.isEmpty()) {
 			depenFor.append(writeDepenMaxMin(depenList, formula, element));
@@ -409,7 +412,6 @@ public class ExportGRLMathS implements IURNExport {
 				if (elementMap.get(subElement) == null) {
 					subFor = writeLink(subElement);
 				} else {
-					// System.out.println("you have subfor!");
 					subFor = elementMap.get(subElement);
 				}
 				if ((subElement.getType().getName().compareTo("Indicator") != 0) && (!FeatureExport.IsItLeaf(subElement)))
