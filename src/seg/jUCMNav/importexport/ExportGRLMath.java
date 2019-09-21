@@ -167,7 +167,7 @@ public class ExportGRLMath implements IURNExport {
 		write("ModelName= '");
 		write(FeatureExport.modifyName(urn.getName()) + "'\n");
 		write("if not os.path.exists(ModelName):\n");
-		write("\tos.makedirs(ModelName)\n");
+		write("   os.makedirs(ModelName)\n");
 		write("os.chdir(ModelName)");
 		write("\n");
 		write("\n");

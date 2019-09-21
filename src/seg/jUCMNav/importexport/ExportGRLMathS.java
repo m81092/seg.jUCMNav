@@ -166,7 +166,7 @@ public class ExportGRLMathS implements IURNExport {
 		write("ModelName= '");
 		write(FeatureExport.modifyName(urn.getName()) + "'\n");
 		write("if not os.path.exists(ModelName):\n");
-		write("\tos.makedirs(ModelName)\n");
+		write("   os.makedirs(ModelName)\n");
 		write("os.chdir(ModelName)");
 		write("\n");
 		write("\n");
@@ -417,17 +417,18 @@ public class ExportGRLMathS implements IURNExport {
 							formula.toString().replaceAll(FeatureExport.modifyName(subElement.getName()), subFor.toString()));
 			}
 			// if the element is indicator
-//			if (subEle.getType().getName().compareTo("Indicator") == 0) {
-//				StringBuffer indicatorFor = new StringBuffer();
-//				if (elementMap.get(subEle) == null) {
-//					System.out.println(element.getName() + "Went To indicator from writeLink where no formula");
-//					indicatorFor = indicatorFor(subEle);
-//				} else { replace indicator name with formula
-//					indicatorFor = eleForMap.get(subEle);
-//					formula = new StringBuffer(
-//					formula.toString().replaceAll(FeatureExport.modifyName(subEle.getName()), indicatorFor.toString()));
-//				}
-//			}
+			if (subElement.getType().getName().compareTo("Indicator") == 0) {
+				StringBuffer indicatorFor = new StringBuffer();
+				if (elementMap.get(subElement) == null) {
+					//System.out.println(element.getName() + "Went To indicator from writeLink where no formula");
+					//indicatorFor = indicatorFor(subElement);
+					writeIndicatorFunction(element, indicatorFor);
+				} //else {  // replace indicator name with formula
+				//	indicatorFor = eleForMap.get(subEle);
+				//	formula = new StringBuffer(
+				//			formula.toString().replaceAll(FeatureExport.modifyName(subEle.getName()), indicatorFor.toString()));
+				//}
+			}
 		}
 		return formula;
 	}
