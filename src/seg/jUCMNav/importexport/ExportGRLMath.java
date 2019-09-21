@@ -59,6 +59,7 @@ public class ExportGRLMath implements IURNExport {
 	public static final String PIECEWISE = "Piecewise";
 	public static final String MIN = "Min";
 	public static final String MAX = "Max";
+	public static final String HUNDRED = "100.0";
 
 	// store elements and the functions
 	private Map<IntentionalElement, StringBuffer> elementMap;
@@ -94,14 +95,11 @@ public class ExportGRLMath implements IURNExport {
 					if ((diagram instanceof GRLGraph) && !(diagram instanceof FeatureDiagram)) {
 						String diagramName = ExportWizard.getDiagramName(diagram);
 						String purName = diagramName.substring(diagramName.lastIndexOf("-") + 1);
-						// System.out.println("Diagram information="+diagram.toString()+"
-						// name="+diagramName+" PureNam= "+purName);
 						GRLname = purName;
 					}
 				}
 				writeFormula(urn);
 				writeActor(urn);
-				// writeIndicator(urn);
 				writeModel(urn);
 				writeTranslation(urn);
 			}
@@ -194,8 +192,7 @@ public class ExportGRLMath implements IURNExport {
 	 * @param elementFormula
 	 * @throws IOException
 	 */
-	private void writeIndicatorFunction(IntentionalElement element, StringBuffer elementFormula)
-			throws IOException {
+	private void writeIndicatorFunction(IntentionalElement element, StringBuffer elementFormula) throws IOException {
 		String[] indicatorValues = getIndicatorValues(element);
 		// if worst and target values are equal
 		if (indicatorValues[0].equalsIgnoreCase("S") && indicatorValues[1].equals(indicatorValues[3])) {
@@ -205,13 +202,13 @@ public class ExportGRLMath implements IURNExport {
 			elementFormula.append(PIECEWISE);
 			elementFormula.append(LEFT_BRACKET);
 			elementFormula.append(LEFT_BRACKET);
-			elementFormula.append("100");
+			elementFormula.append(HUNDRED);
 			elementFormula.append(COMMA);
 			elementFormula.append(indicatorValues[1].replaceAll("[a-zA-Z]+", FeatureExport.modifyName(element.getName())));
 			elementFormula.append(RIGHT_BRACKET);
 			elementFormula.append(COMMA);
 			elementFormula.append(LEFT_BRACKET);
-			elementFormula.append("0");
+			elementFormula.append("0.0");
 			elementFormula.append(COMMA);
 			elementFormula.append("True");
 			elementFormula.append(RIGHT_BRACKET);
@@ -237,7 +234,7 @@ public class ExportGRLMath implements IURNExport {
 		StringBuffer elementFormula;
 		StringBuffer function;
 		// initialize all the symbols
-		write("#initalize all the variables\n");
+		write("# Initalize all the variables\n");
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
 			if (isGRLElement(element)) {
@@ -284,10 +281,10 @@ public class ExportGRLMath implements IURNExport {
 				}
 			}
 		}
-		
+
 		write("# Non-leaf element functions\n");
 		// checking the non leaf elements and adding the link
-		
+
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
 			if (isGRLElement(element)) {
@@ -319,7 +316,7 @@ public class ExportGRLMath implements IURNExport {
 		StringBuffer decomFor = new StringBuffer();
 		StringBuffer conFor = new StringBuffer();
 		StringBuffer depenFor = new StringBuffer();
-		List<String> StrEle = new ArrayList<String>();// the elements' str
+		List<String> StrEle = new ArrayList<String>();// the element's string
 
 		Map<String, List<IntentionalElement>> eleMap = new HashMap<String, List<IntentionalElement>>();
 		List<IntentionalElement> decomList = new ArrayList<IntentionalElement>();
@@ -369,26 +366,25 @@ public class ExportGRLMath implements IURNExport {
 			conFor.append(COMMA);
 			conFor.append(MIN);
 			conFor.append(LEFT_BRACKET);
-			conFor.append("100.0");
+			conFor.append(HUNDRED);
 			conFor.append(COMMA);
 			conFor.append(LEFT_BRACKET);
 			List<String> conTimesList = new ArrayList<String>();
 			for (int i = 0; i < conLink.size(); i++) {
-				// System.out.println("contributuin ele:" + conList.get(i).getName());
 				String conTimes = new String();
 				conTimes = Integer.toString(((Contribution) conLink.get(i)).getQuantitativeContribution()) + TIMES
 						+ FeatureExport.modifyName(conList.get(i).getName());
 				conTimesList.add(conTimes);
 			}
 			if (!decomList.isEmpty()) {
-				conTimesList.add(decomFor + TIMES + "100.0");
+				conTimesList.add(decomFor + TIMES + HUNDRED);
 			}
 
 			String joined = String.join("+", conTimesList);
 			conFor.append(joined);
 			conFor.append(RIGHT_BRACKET);
 			conFor.append(DIVIDE);
-			conFor.append("100.0");
+			conFor.append(HUNDRED);
 			conFor.append(RIGHT_BRACKET);
 			conFor.append(RIGHT_BRACKET);
 
@@ -398,7 +394,6 @@ public class ExportGRLMath implements IURNExport {
 			depenFor.append(writeDepenMaxMin(depenList, formula, element));
 			formula = depenFor;
 		}
-		// System.out.println(formula);
 		for (Iterator it = srcList.iterator(); it.hasNext();) {
 			IntentionalElement subEle = (IntentionalElement) it.next();
 			// if sub element is not the leaf.
@@ -407,7 +402,6 @@ public class ExportGRLMath implements IURNExport {
 				if (elementMap.get(subEle) == null) {
 					subFor = writeLink(subEle);
 				} else {
-					// System.out.println("you have subfor!");
 					subFor = elementMap.get(subEle);
 				}
 				formula = new StringBuffer(
@@ -530,13 +524,13 @@ public class ExportGRLMath implements IURNExport {
 					eleFormula.append(elementMap.get(ele));
 					eleFormula.append(RIGHT_BRACKET);
 					if (ele.getLinksSrc().size() == 0) {
-						actorTimesWeight.add(eleFormula + TIMES + "100.0");
+						actorTimesWeight.add(eleFormula + TIMES + HUNDRED);
 						quantSum += 100;
 					} else {
 						// give the weight to top-level elements;
 						IntentionalElement srcElement = (IntentionalElement) (((ElementLink) (ele.getLinksSrc().get(0))).getDest());
 						if (eleList.contains(srcElement) == false) {
-							actorTimesWeight.add(eleFormula + TIMES + "100.0");
+							actorTimesWeight.add(eleFormula + TIMES + HUNDRED);
 							quantSum += 100;
 						}
 					}
@@ -613,7 +607,7 @@ public class ExportGRLMath implements IURNExport {
 					actorRe.append(LEFT_BRACKET);
 					actorRe.append(actorMap.get(actorList.get(i)));
 					actorRe.append(RIGHT_BRACKET);
-					actorTimesWeight.add(actorRe + TIMES + "100.0");
+					actorTimesWeight.add(actorRe + TIMES + HUNDRED);
 				}
 				sumQua = 100 * actorList.size();
 			} else {
@@ -663,7 +657,6 @@ public class ExportGRLMath implements IURNExport {
 
 		} else {// there are elements in the actor
 			if (sumQua == 0) {// there are no weighted elements in actor
-				// System.out.println("sum == 0 ");
 				for (int i = 0; i < eleList.size(); i++) {
 					IntentionalElement ele = (IntentionalElement) (eleList.get(i));
 					StringBuffer eleFormula = new StringBuffer();
@@ -672,27 +665,26 @@ public class ExportGRLMath implements IURNExport {
 					eleFormula.append(RIGHT_BRACKET);
 					if (ele.getLinksSrc().size() == 0) {
 						// actorTimesQua.add(ele.getName() + Times + "100"); Amal
-						actorTimesQua.add(eleFormula + TIMES + "100.0");
+						actorTimesQua.add(eleFormula + TIMES + HUNDRED);
 						sumQua += 100;
 					} else {
 						// give the weight to top-level elements;
 						IntentionalElement srcElement = (IntentionalElement) (((ElementLink) (ele.getLinksSrc().get(0))).getDest());
 
 						if (eleList.contains(srcElement) == false) {
-							actorTimesQua.add(eleFormula + TIMES + "100.0");
+							actorTimesQua.add(eleFormula + TIMES + HUNDRED);
 							sumQua += 100;
 						}
 					}
 				} // for
 			} // if(sumQua==0)
 			else {// there are some elements weighted
-				// System.out.println("sum! = 0 ");
 				for (int i = 0; i < eleList.size(); i++) {
 					IntentionalElement ele = (IntentionalElement) (eleList.get(i));
 					if (ele.getImportanceQuantitative() == 0) {
 						continue;
 					}
-					actorTimesQua.add(elementMap.get(ele) + TIMES + "100.0");
+					actorTimesQua.add(elementMap.get(ele) + TIMES + HUNDRED);
 				}
 			}
 		}
@@ -723,7 +715,7 @@ public class ExportGRLMath implements IURNExport {
 		}
 		if (worst < target) {
 			formula.append(LEFT_BRACKET);
-			formula.append("100");
+			formula.append(HUNDRED);
 			formula.append(COMMA);
 			formula.append(currentName);
 			formula.append(">=");
@@ -813,7 +805,7 @@ public class ExportGRLMath implements IURNExport {
 		}
 		if (worst > target) {
 			formula.append(LEFT_BRACKET);
-			formula.append("100");
+			formula.append(HUNDRED);
 			formula.append(COMMA);
 			formula.append(currentName);
 			formula.append("<=");
@@ -904,7 +896,12 @@ public class ExportGRLMath implements IURNExport {
 		return formula;
 	}
 
-	// working
+	/**
+	 * Writes the translation of the elements to SymPy
+	 * 
+	 * @param urn
+	 * @throws IOException
+	 */
 	private void writeTranslation(URNspec urn) throws IOException {
 		write("GRLDiagramName " + EQUALS + " '" + FeatureExport.modifyName(GRLname) + "' " + "\n");
 		StringBuffer varList = new StringBuffer();
@@ -914,7 +911,7 @@ public class ExportGRLMath implements IURNExport {
 		varList.append("[");
 		List<String> eleList = new ArrayList<String>();
 		eleList.addAll(elementSet);
-		// String message = String.join("-", list); 
+		// String message = String.join("-", list);
 		varList.append(String.join(",", eleList));
 		varList.append("]");
 		write("\n# variable list");

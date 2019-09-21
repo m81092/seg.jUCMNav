@@ -93,14 +93,11 @@ public class ExportGRLMathS implements IURNExport {
 					if ((diagram instanceof GRLGraph) && !(diagram instanceof FeatureDiagram)) {
 						String diagramName = ExportWizard.getDiagramName(diagram);
 						String purName = diagramName.substring(diagramName.lastIndexOf("-") + 1);
-						// System.out.println("Diagram information="+diagram.toString()+"
-						// name="+diagramName+" PureNam= "+purName);
 						GRLname = purName;
 					}
 				}
 				writeFormula(urn);
 				writeActor(urn);
-				// writeIndicator(urn);
 				writeModel(urn);
 				writeTranslation(urn);
 			}
@@ -177,6 +174,8 @@ public class ExportGRLMathS implements IURNExport {
 
 	/**
 	 * Check if the element is part of GRL diagrams(added by Amal Ahmed Anda)
+	 * 
+	 * @param element
 	 */
 	private Boolean isGRLElement(IntentionalElement element) {
 		for (Iterator it = element.getRefs().iterator(); it.hasNext();) {
@@ -204,18 +203,17 @@ public class ExportGRLMathS implements IURNExport {
 			elementFormula.append(PIECEWISE);
 			elementFormula.append(LEFT_BRACKET);
 			elementFormula.append(LEFT_BRACKET);
-			elementFormula.append("100");
+			elementFormula.append("100.0");
 			elementFormula.append(COMMA);
 			elementFormula.append(indicatorValues[1].replaceAll("[a-zA-Z]+", FeatureExport.modifyName(element.getName())));
 			elementFormula.append(RIGHT_BRACKET);
 			elementFormula.append(COMMA);
 			elementFormula.append(LEFT_BRACKET);
-			elementFormula.append("0");
+			elementFormula.append("0.0");
 			elementFormula.append(COMMA);
 			elementFormula.append("True");
 			elementFormula.append(RIGHT_BRACKET);
 			elementFormula.append(RIGHT_BRACKET);
-			elementFormula.append("Piecewise");
 		} else if (indicatorValues[0].equalsIgnoreCase("F")) {
 			indicatorValues[1] = indicatorValues[1].replaceAll("current", FeatureExport.modifyName(element.getName()));
 			elementFormula.append(indicatorValues[1]);
@@ -236,9 +234,9 @@ public class ExportGRLMathS implements IURNExport {
 		elementMap = new HashMap<IntentionalElement, StringBuffer>();
 		StringBuffer elementFormula;
 		StringBuffer function;
-		// initial all the symbols
+		// initialize all the symbols
 
-		write("#inital all the variable\n");
+		write("# initalize all the variables\n");
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
 
@@ -404,19 +402,19 @@ public class ExportGRLMathS implements IURNExport {
 		}
 
 		for (Iterator it = srcList.iterator(); it.hasNext();) {
-			IntentionalElement subEle = (IntentionalElement) it.next();
+			IntentionalElement subElement = (IntentionalElement) it.next();
 			// if sub element is not the leaf.
 			StringBuffer subFor = new StringBuffer();
-			if (subEle.getLinksDest().size() != 0) {
-				if (elementMap.get(subEle) == null) {
-					subFor = writeLink(subEle);
+			if (subElement.getLinksDest().size() != 0) {
+				if (elementMap.get(subElement) == null) {
+					subFor = writeLink(subElement);
 				} else {
 					// System.out.println("you have subfor!");
-					subFor = elementMap.get(subEle);
+					subFor = elementMap.get(subElement);
 				}
-				if ((subEle.getType().getName().compareTo("Indicator") != 0) && (!FeatureExport.IsItLeaf(subEle)))
+				if ((subElement.getType().getName().compareTo("Indicator") != 0) && (!FeatureExport.IsItLeaf(subElement)))
 					formula = new StringBuffer(
-							formula.toString().replaceAll(FeatureExport.modifyName(subEle.getName()), subFor.toString()));
+							formula.toString().replaceAll(FeatureExport.modifyName(subElement.getName()), subFor.toString()));
 			}
 			// if the element is indicator
 //			if (subEle.getType().getName().compareTo("Indicator") == 0) {
@@ -520,6 +518,8 @@ public class ExportGRLMathS implements IURNExport {
 			function = new StringBuffer();
 			function.append(FeatureExport.modifyName(actor.getName()));
 			formula = new StringBuffer(); // the part after =
+			quantSum = 0;
+			dNum = 100;
 			boolean hasElementInActor = true;
 			List<IntentionalElement> elementList = new ArrayList<IntentionalElement>(); // the elements in the actor
 			List<Integer> quantList = new ArrayList<Integer>();
@@ -559,7 +559,8 @@ public class ExportGRLMathS implements IURNExport {
 						quantSum += 100;
 					} else {
 						// give the weight to top-level elements;
-						IntentionalElement srcElement = (IntentionalElement) (((ElementLink) (element.getLinksSrc().get(0))).getDest());
+						IntentionalElement srcElement = (IntentionalElement) (((ElementLink) (element.getLinksSrc().get(0)))
+								.getDest());
 						if (elementList.contains(srcElement) == false) {
 							actorTimesWeight.add(elementFormula + TIMES + "100.0");
 							quantSum += 100;
@@ -570,12 +571,12 @@ public class ExportGRLMathS implements IURNExport {
 			if (quantSum > 0) {
 				// there are some elements weighted
 				for (int i = 0; i < elementList.size(); i++) {
-					IntentionalElement ele = (IntentionalElement) (elementList.get(i));
-					if (ele.getImportanceQuantitative() == 0) {
+					IntentionalElement element = (IntentionalElement) (elementList.get(i));
+					if (element.getImportanceQuantitative() == 0) {
 						continue;
 					}
-
-					actorTimesWeight.add(elementMap.get(ele) + TIMES + Integer.toString(ele.getImportanceQuantitative()));
+					
+					actorTimesWeight.add(elementMap.get(element) + TIMES + Integer.toString(element.getImportanceQuantitative()));
 				}
 			}
 			if (!hasElementInActor)
@@ -590,7 +591,7 @@ public class ExportGRLMathS implements IURNExport {
 			}
 			function.append(EQUALS);
 			function.append(formula);
-			write("# Actor function\n");
+			write("# " + FeatureExport.modifyName(actor.getName()) + " Actor function\n");
 			write(function.toString());
 			write("\n");
 			actorMap.put(actor, formula);
@@ -608,6 +609,10 @@ public class ExportGRLMathS implements IURNExport {
 	 * @throws IOException
 	 */
 	private void writeModel(URNspec urn) throws IOException {
+		//**for testing
+		System.out.println("actor 1 -> "+actorMap.get(urn.getGrlspec().getActors().get(0)));
+		System.out.println("actor 2 -> "+actorMap.get(urn.getGrlspec().getActors().get(1)));
+		
 		modelFormula = new StringBuffer();
 		StringBuffer function = new StringBuffer();
 		List<Actor> actorList = new ArrayList<Actor>();
@@ -652,13 +657,10 @@ public class ExportGRLMathS implements IURNExport {
 				}
 			}
 			String joined = String.join("+", actorTimesWeight);
-
 			modelFormula.append(LEFT_BRACKET);
 			modelFormula.append(joined);
-
 			modelFormula.append(RIGHT_BRACKET);
 			modelFormula.append(DIVIDE);
-
 			modelFormula.append(Integer.toString(Math.max(sumQua, dNum)));
 
 		}
@@ -933,7 +935,12 @@ public class ExportGRLMathS implements IURNExport {
 		return formula;
 	}
 
-	// working
+	/**
+	 * Writes the translation of the elements to SymPy
+	 * 
+	 * @param urn
+	 * @throws IOException
+	 */
 	private void writeTranslation(URNspec urn) throws IOException {
 		write("GRLDiagramName " + EQUALS + " '" + FeatureExport.modifyName(GRLname) + "' " + "\n");
 		StringBuffer varList = new StringBuffer();
@@ -946,7 +953,7 @@ public class ExportGRLMathS implements IURNExport {
 		// String message = String.join("-", list); 
 		varList.append(String.join(",", eleList));
 		varList.append("]");
-		write("\n#variable list");
+		write("\n# variable list");
 		write("\n");
 		write(varList.toString());
 
