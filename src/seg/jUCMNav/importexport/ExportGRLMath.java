@@ -931,6 +931,10 @@ public class ExportGRLMath implements IURNExport {
 		// tranScript.append(urn.getName());
 		tranScript.append(COMMA);
 		tranScript.append("LANG");
+		tranScript.append(COMMA);
+		tranScript.append("2");
+		tranScript.append(COMMA);
+		tranScript.append("None");
 		tranScript.append(RIGHT_BRACKET);
 		write("\nLANG = []\n" + "langList = ['python','c','c++','java',\"javascript\",'matlab','r','cp']\n");
 
