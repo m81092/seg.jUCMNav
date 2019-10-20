@@ -65,9 +65,8 @@ public class ExportGRLMathS implements IURNExport {
 	// store actors and the functions
 	private Map<Actor, StringBuffer> actorMap;
 	private StringBuffer modelFormula;
-	private HashSet<String> elementSet = new HashSet<String>();
-	// stores the elements except indicators which are separated from the main
-	// function
+	private Set<String> elementSet = new HashSet<String>();
+	// stores the elements except indicators which are separated from the main function
 	private Set<IntentionalElement> splitElements = new HashSet<IntentionalElement>();
 
 	@Override
@@ -442,6 +441,17 @@ public class ExportGRLMathS implements IURNExport {
 		return formula;
 	}
 	
+//	private boolean toBeSeparated(IntentionalElement element) throws IOException {
+//		Iterator it = element.getLinksDest().iterator();
+//		if (it.hasNext()) return true;
+//		for (Iterator it = element.getLinksDest().iterator(); it.hasNext();) {
+//			ElementLink scrLink = (ElementLink) it.next();
+//			IntentionalElement srcElement = (IntentionalElement) (scrLink.getSrc());
+//			return true;
+//		}
+//		return false;
+//	}
+	
 	// add the separated elements except indicators to the set
 	private void addElement(List<IntentionalElement> list) throws IOException {
 		for (IntentionalElement e : list) {
@@ -727,7 +737,7 @@ public class ExportGRLMathS implements IURNExport {
 	}
 
 	private StringBuffer modelWithoutActor(URNspec urn) throws IOException {
-		List<IntentionalElement> eleList = new ArrayList<IntentionalElement>();// the elements in the actor
+		List<IntentionalElement> eleList = new ArrayList<IntentionalElement>();	// the elements in the actor
 		StringBuffer formula = new StringBuffer();
 		List<Integer> quaList = new ArrayList<Integer>();
 		List<String> actorTimesQua = new ArrayList<String>();
@@ -987,7 +997,6 @@ public class ExportGRLMathS implements IURNExport {
 			formula.append(RIGHT_BRACKET);
 		}
 
-		// System.out.println("New Function=" + formula.toString());
 		return formula;
 	}
 
@@ -1036,34 +1045,31 @@ public class ExportGRLMathS implements IURNExport {
 		write("\nLANG = []\n" + "langList = ['python','c','c++','java',\"javascript\",'matlab','r']\n");
 
 		StringBuffer allprint = new StringBuffer();
-		allprint.append("def allPrint():\n");
+		//allprint.append("def allPrint():\n");
+		write("def allPrint():\n");
+		
+//		write("\t\t# Indicator(s) \n");
+//		// writing the separated indicators here
+//		writeIndependentIndicators(urn.getGrlspec().getIntElements().iterator());
+//		// writing the separated leaf features here
+//		writeLeafFeatures();
+//		// writing the separated functions here
+//		writeIndependentFunction();
+//		// writing the model function here
+//		write("\t\t# Model Function \n");
+		
 		allprint.append("\t\t" + varList.toString() + "\n");
 		allprint.append("\t\t" + tranScript + "\n");
 		write(allprint.toString());
-
+		
+		write("\t\t# Indicator(s) \n");
+		// writing the separated indicators here
+		writeIndependentIndicators(urn.getGrlspec().getIntElements().iterator());
+		// writing the separated leaf features here
+		writeLeafFeatures();
 		// writing the separated functions here
 		writeIndependentFunction();
-
-		write("\t\t# Indicators \n");
-		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
-			IntentionalElement IndicatorV = (IntentionalElement) it.next();
-
-			if (IndicatorV.getType().getName().compareTo("Indicator") == 0) {
-				String formulaIn = elementMap.get(IndicatorV).toString();
-				String ind = "'" + FeatureExport.modifyName(IndicatorV.getName()) + "'";
-				write("\t\tList=[" + ind + "");
-				for (Iterator ite = elementSet.iterator(); ite.hasNext();) {
-					String var = (String) ite.next();
-
-					if ((formulaIn.contains(var.subSequence(1, var.length() - 1))) && (var.compareTo(ind) != 0)) {
-						write("," + var);
-					}
-				}
-				write("]\n");
-				write("\t\tprint('" + FeatureExport.modifyName(IndicatorV.getName()) + "')\n");
-				write("\t\tTranslate('" + elementMap.get(IndicatorV) + "', List[0], List, LANG, 2)\n");
-			}
-		}
+		// writing the model function here
 
 		StringBuffer scriptLang = new StringBuffer("if(len(sys.argv)==1):\n\tLANG = langList\n" + "\tallPrint()\n"
 				+ "else:\n" + "\tfor i in sys.argv:\n" + "\t\tif(sys.argv.index(i)==0):continue\n"
@@ -1087,6 +1093,60 @@ public class ExportGRLMathS implements IURNExport {
 		// }
 
 	}
+	
+	/**
+	 * Writes the separated leaf features to SymPy
+	 *
+	 * @throws IOException
+	 */
+	private void writeLeafFeatures() throws IOException {
+		
+		Set<String> nameSet = new HashSet<String>(elementSet);
+		List<String> list = new ArrayList<String>();
+		String formula = null;
+		write("\t\t# Leaf Feature(s) \n");
+		for(Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
+			String elementName = FeatureExport.modifyName(entry.getKey().getName().toString());
+			if (FeatureExport.IsItLeaf(entry.getKey()) && !elementSet.contains("'" + elementName + "'")) {
+				formula = new String(entry.getValue());
+				for (String name : nameSet) {
+					if (formula.contains(name.subSequence(1, name.length() - 1)))
+						list.add(name);
+				}
+				write("\t\tprint('" + FeatureExport.modifyName(entry.getKey().getName()) + "')\n");
+				String join = String.join(",", list);
+				write("\t\tList=[" + join + "]\n");
+				write("\t\tTranslate('" + formula + "', List[0], List, LANG, 2)\n");
+			}
+		}
+	}
+	
+	/**
+	 * Writes the separated indicators to SymPy
+	 *
+	 * @throws IOException
+	 */
+	private void writeIndependentIndicators(Iterator iterator) throws IOException {
+
+		while (iterator.hasNext()) {
+			IntentionalElement IndicatorV = (IntentionalElement) iterator.next();
+			if (IndicatorV.getType().getName().compareTo("Indicator") == 0) {
+				String formulaIn = elementMap.get(IndicatorV).toString();
+				String ind = "'" + FeatureExport.modifyName(IndicatorV.getName()) + "'";
+				write("\t\tList=[" + ind + "");
+				for (Iterator ite = elementSet.iterator(); ite.hasNext();) {
+					String var = (String) ite.next();
+
+					if ((formulaIn.contains(var.subSequence(1, var.length() - 1))) && (var.compareTo(ind) != 0)) {
+						write("," + var);
+					}
+				}
+				write("]\n");
+				write("\t\tprint('" + FeatureExport.modifyName(IndicatorV.getName()) + "')\n");
+				write("\t\tTranslate('" + elementMap.get(IndicatorV) + "', List[0], List, LANG, 2)\n");
+			}
+		}
+	}
 
 	/**
 	 * Writes the separated function to SymPy
@@ -1094,22 +1154,24 @@ public class ExportGRLMathS implements IURNExport {
 	 * @throws IOException
 	 */
 	private void writeIndependentFunction() throws IOException {
+
 		if (!splitElements.isEmpty()) {
 			Set<String> nameSet = new HashSet<String>(elementSet);
 			List<String> list = new ArrayList<String>();
 			String formula;
-			write("\t\t# Separated Elements \n");
+			write("\t\t# Separated Element(s) \n");
 			for (IntentionalElement e : splitElements) {
 				formula = new String(elementMap.get(e));
 				for (Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
-					String elementName = FeatureExport.modifyName(entry.getKey().getName().toString());					
+					String elementName = FeatureExport.modifyName(entry.getKey().getName().toString());
 					if (formula.contains(elementName) && !elementSet.contains("'" + elementName + "'")) {
 						formula = formula.replace(elementName, entry.getValue().toString());
 					}
 					nameSet.add("'" + elementName + "'");
 				}
 				for (String name : nameSet) {
-					if (formula.contains(name.subSequence(1, name.length() - 1))) list.add(name);
+					if (formula.contains(name.subSequence(1, name.length() - 1)))
+						list.add(name);
 				}
 				write("\t\tprint('" + FeatureExport.modifyName(e.getName()) + "')\n");
 				String join = String.join(",", list);
