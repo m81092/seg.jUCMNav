@@ -19,9 +19,10 @@ class convertToCpp(convertToLang):
 			writeList.append(file_head)
 
 			file_expr = '\tdouble expr = ' + str(self.func) +';'+'\n'
-			for key, value in self.dict.items():
-				temp = '\tdouble ' + str(key) + ' = ' + str(value) + ';' + '\n'
-				writeList.append(temp)
+			if self.dict is not None:
+				for key, value in self.dict.items():
+					temp = '\tdouble ' + str(key) + ' = ' + str(value) + ';' + '\n'
+					writeList.append(temp)
 			writeList.append(file_expr)
 			file_return = '\t'+'return '+ 'expr'+';'+'\n'
 			writeList.append(file_return)

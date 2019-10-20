@@ -23,9 +23,10 @@ class convertToR(convertToLang):
 			writeList.append(file_head)
 
 			file_expr = '\texpr = ' + str(self.func) +" "
-			for key, value in self.dict.items():
-				temp = '\t' + str(key) + ' = ' + str(value) + " "
-				writeList.append(temp)
+			if self.dict is not None:
+				for key, value in self.dict.items():
+					temp = '\t' + str(key) + ' = ' + str(value) + " "
+					writeList.append(temp)
 			writeList.append(file_expr)
 			#file_return = '\t'+'return '+ 'expr'+'\n'
 			#writeList.append(file_return)
