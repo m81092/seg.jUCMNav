@@ -36,6 +36,9 @@ def Translate(
             dict[key] = val
     if tra == 1:
         func = simplify(formula)
+        for key, value in dict.items():
+            val = simplify(value)
+            dict[key] = val
     if tra == 0:
         func = formula
 
@@ -44,52 +47,59 @@ def Translate(
     # func=formula
 
     if 'java' in Type:
-        for key, value in dict.items():
+        jDict = dict.copy()
+        for key, value in jDict.items():
             jval = jcode(value)
-            dict[key] = jval
-        convertToJava(jcode(func), dep, args, dict).writeMath()
+            jDict[key] = jval
+        convertToJava(jcode(func), dep, args, jDict).writeMath()
         print('java')
 
     if 'python' in Type:
-        print ('python')
+        pDict = dict.copy()
         from sympy.printing.pycode import PythonCodePrinter, pycode
         pr = PythonCodePrinter()
-        for key, value in dict.items():
+        for key, value in pDict.items():
             pval = pr.doprint(value)
-            dict[key] = pval
-        convertToPy(pr.doprint(func), dep, args, dict).writeMath()
+            pDict[key] = pval
+        convertToPy(pr.doprint(func), dep, args, pDict).writeMath()
+        print ('python')
 
     if 'javascript' in Type:
-        for key, value in dict.items():
+        jsDict = dict.copy()
+        for key, value in jsDict.items():
             jsval = jscode(value)
-            dict[key] = jsval
-        convertToJS(jscode(func), dep, args, dict).writeMath()
+            jsDict[key] = jsval
+        convertToJS(jscode(func), dep, args, jsDict).writeMath()
         print ('js')
 
     if 'matlab' in Type:
-        print ('matlab')
-        for key, value in dict.items():
+        mDict = dict.copy()
+        for key, value in mDict.items():
             mval = octave_code(value)
-            dict[key] = mval
-        convertToMatlab(octave_code(func), dep, args, dict).writeMath()
+            mDict[key] = mval
+        convertToMatlab(octave_code(func), dep, args, mDict).writeMath()
+        print ('matlab')
 
     if 'c' in Type:
-        for key, value in dict.items():
+        cDict = dict.copy()
+        for key, value in cDict.items():
             cval = ccode(value)
-            dict[key] = cval
-        convertToC(ccode(func), dep, args, dict).writeMath()
+            cDict[key] = cval
+        convertToC(ccode(func), dep, args, cDict).writeMath()
         print ('c')
 
     if 'c++' in Type:
-        for key, value in dict.items():
+        cpDict = dict.copy()
+        for key, value in cpDict.items():
             cpval = cxxcode(value)
-            dict[key] = cpval
-        convertToCpp(cxxcode(func), dep, args, dict).writeMath()
+            cpDict[key] = cpval
+        convertToCpp(cxxcode(func), dep, args, cpDict).writeMath()
         print ('c++')
 
     if 'r' in Type:
-        for key, value in dict.items():
+        rDict = dict.copy()
+        for key, value in rDict.items():
             rval = rcode(value)
-            dict[key] = rval
-        convertToR(rcode(func), dep, args, dict).writeMath()
+            rDict[key] = rval
+        convertToR(rcode(func), dep, args, rDict).writeMath()
         print ('R')

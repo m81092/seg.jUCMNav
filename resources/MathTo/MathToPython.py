@@ -25,7 +25,7 @@ class convertToPy(convertToLang):
 
 			file_expr = '\texpr = ' + str(self.func) +'\n'
 			for key, value in self.dict.items():
-				temp = '\t' + str(key) + ' = ' + str(value) + ';' + '\n'
+				temp = '\t' + str(key) + ' = ' + str(value) + '\n'
 				writeList.append(temp)
 			writeList.append(file_expr)
 			file_return = '\t'+'return '+ 'expr'+'\n'
