@@ -1008,6 +1008,7 @@ public class ExportGRLMathS implements IURNExport {
 	 * @throws IOException
 	 */
 	private void writeTranslation(URNspec urn) throws IOException {
+		List<String> dictElements = new ArrayList<String>();
 		write("GRLDiagramName " + EQUALS + " '" + FeatureExport.modifyName(GRLname) + "' " + "\n");
 		StringBuffer varList = new StringBuffer();
 		varList.append("List");
@@ -1052,15 +1053,17 @@ public class ExportGRLMathS implements IURNExport {
 		// initializing a python dictionary
 		write("\tdict = {\n");
 		// writing all the separated indicators in the dictionary
-		writeIndependentIndicators(urn.getGrlspec().getIntElements().iterator());
+		writeIndependentIndicators(urn.getGrlspec().getIntElements().iterator(), dictElements);
 		// writing all the separated leaf features in the dictionary
-		writeLeafFeatures();
+		writeLeafFeatures(dictElements);
 	  // writing all the separated functions in the dictionary
-		writeIndependentFunction();
-		write("\t}");
+		writeIndependentFunction(dictElements);
+		String joinFunctions = String.join(",\n", dictElements);
+		write(joinFunctions);
+		write("\n\t}\n");
 		write("\t# Model Function\n");
-		allprint.append("\t\t" + varList.toString() + "\n");
-		allprint.append("\t\t" + tranScript + "\n");
+		allprint.append("\t" + varList.toString() + "\n");
+		allprint.append("\t" + tranScript + "\n");
 		write(allprint.toString());
 
 		StringBuffer scriptLang = new StringBuffer("if(len(sys.argv)==1):\n\tLANG = langList\n" + "\tallPrint()\n"
@@ -1091,15 +1094,13 @@ public class ExportGRLMathS implements IURNExport {
 	 *
 	 * @throws IOException
 	 */
-	private void writeLeafFeatures() throws IOException {
+	private void writeLeafFeatures(List<String> list) throws IOException {
 		String formula = null;
 		for (Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
 			String elementName = FeatureExport.modifyName(entry.getKey().getName().toString());
 			if (FeatureExport.IsItLeaf(entry.getKey()) && !elementSet.contains("'" + elementName + "'")) {
 				formula = new String(entry.getValue());
-				write("\t\t'" + FeatureExport.modifyName(entry.getKey().getName()) + "'");
-				write(COLON);
-				write("'" + formula + "'\n");
+				list.add("\t\t'" + FeatureExport.modifyName(entry.getKey().getName()) + "'" + COLON + "'" + formula + "'");
 			}
 		}
 	}
@@ -1109,14 +1110,12 @@ public class ExportGRLMathS implements IURNExport {
 	 *
 	 * @throws IOException
 	 */
-	private void writeIndependentIndicators(Iterator iterator) throws IOException {
-
+	private void writeIndependentIndicators(Iterator iterator, List<String> list) throws IOException {
+		String formula = new String();
 		while (iterator.hasNext()) {
 			IntentionalElement IndicatorV = (IntentionalElement) iterator.next();
 			if (IndicatorV.getType().getName().compareTo("Indicator") == 0) {
-				write("\t\t'" + FeatureExport.modifyName(IndicatorV.getName()) + "'");
-				write(COLON);
-				write("'" + elementMap.get(IndicatorV).toString() + "'\n");
+				list.add("\t\t'" + FeatureExport.modifyName(IndicatorV.getName()) + "'" + COLON + "'" + elementMap.get(IndicatorV).toString() + "'");
 			}
 		}
 	}
@@ -1126,15 +1125,13 @@ public class ExportGRLMathS implements IURNExport {
 	 *
 	 * @throws IOException
 	 */
-	private void writeIndependentFunction() throws IOException {
-
+	private void writeIndependentFunction(List<String> list) throws IOException {
+		
 		if (!splitElements.isEmpty()) {
 			String formula;
 			for (IntentionalElement e : splitElements) {
 				formula = new String(elementMap.get(e));
-				write("\t\t'" + FeatureExport.modifyName(e.getName()) + "'");
-				write(COLON);
-				write("'" + formula + "'\n");
+				list.add("\t\t'" + FeatureExport.modifyName(e.getName()) + "'" + COLON + "'" + formula + "'");
 			}
 		}
 	}
