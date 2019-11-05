@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +40,7 @@ import urncore.IURNNode;
  * @author Yuxuan Fan and Amal Anda
  *
  */
-public class ExportGRLMathS implements IURNExport {
+public class ExportGRLMathSimplify implements IURNExport {
 	private String GRLname;
 	FeatureToMathS FeatureExport = new FeatureToMathS();
 	private FileOutputStream fos;
@@ -310,16 +311,16 @@ public class ExportGRLMathS implements IURNExport {
 					function.append(elementFormula);
 					write(function.toString());
 					write("\n");
-					// adding the separated element to the set
-					addElement(element, elementFormula.toString());
+				// adding the separated feature to the set
+					addFeature(element, elementFormula.toString());
 					elementMap.put(element, elementFormula);
 				}
 			}
 		}
 	}
-
-	// add the separated elements(leaf features/task with formula) except indicators to the set
-	private void addElement(IntentionalElement element, String formula) throws IOException {
+	
+	//add the separated elements(leaf features/task with formula) except indicators to the set
+	private void addFeature(IntentionalElement element, String formula) throws IOException {
 			if (element.getType() == IntentionalElementType.TASK_LITERAL && formula.contains(LEFT_BRACKET)) {
 				splitElements.add(element);
 			}
@@ -366,7 +367,8 @@ public class ExportGRLMathS implements IURNExport {
 			eleMap.put("Decomposition", decomList);
 			eleMap.put("Dependency", depenList);
 			eleMap.put("Contribution", conList);
-		} // sequence- first decomposition; second contribution; third dependency
+		} // for
+			// first decomposition; second contribution; third dependency
 		String funcTpye = " ";
 		if (!decomList.isEmpty()) {
 			if (element.getDecompositionType().getName() == "And")
@@ -430,7 +432,7 @@ public class ExportGRLMathS implements IURNExport {
 				if (subElement.getType() == IntentionalElementType.TASK_LITERAL && subFor.toString().contains(LEFT_BRACKET)) {
 					continue;
 				}
-				if (subElement.getType().getName().compareTo("Indicator") != 0 && !FeatureExport.IsItLeaf(subElement))
+				if ((subElement.getType().getName().compareTo("Indicator") != 0) && (!FeatureExport.IsItLeaf(subElement)) && !conList.contains(subElement))
 					formula = new StringBuffer(formula.toString().replaceAll(FeatureExport.modifyName(subElement.getName()), subFor.toString()));
 			}
 			// if the element is indicator
@@ -449,7 +451,17 @@ public class ExportGRLMathS implements IURNExport {
 				// }
 			}
 		}
+		addElement(conList);
 		return formula;
+	}
+	
+	// add the separated elements except indicators to the set
+	private void addElement(List<IntentionalElement> list) throws IOException {
+		for (IntentionalElement e : list) {
+			if (e.getType() != IntentionalElementType.INDICATOR_LITERAL && !FeatureExport.IsItLeaf(e)) {
+				splitElements.add(e);
+			}
+		}
 	}
 
 	private StringBuffer writeDecomMaxMin(List<IntentionalElement> list, String func) throws IOException {
@@ -544,7 +556,6 @@ public class ExportGRLMathS implements IURNExport {
 			List<IntentionalElement> elementList = new ArrayList<IntentionalElement>(); // the elements in the actor
 			List<Integer> quantList = new ArrayList<Integer>();
 			List<String> actorTimesWeight = new ArrayList<String>();
-			// add all the elements inside the actor to a list
 			for (Iterator itAct = actor.getContRefs().iterator(); itAct.hasNext();) {
 				ActorRef actorRef = (ActorRef) itAct.next();
 				Iterator itIEref = actorRef.getNodes().iterator();
@@ -579,7 +590,7 @@ public class ExportGRLMathS implements IURNExport {
 						actorTimesWeight.add(elementFormula + TIMES + "100.0");
 						quantSum += 100;
 					} else {
-						// give the weight to top-level elements
+						// give the weight to top-level elements;
 						IntentionalElement srcElement = (IntentionalElement) (((ElementLink) (element.getLinksSrc().get(0)))
 								.getDest());
 						if (!elementList.contains(srcElement)) {
@@ -596,7 +607,29 @@ public class ExportGRLMathS implements IURNExport {
 					if (element.getImportanceQuantitative() == 0) {
 						continue;
 					}
-					actorTimesWeight.add(elementMap.get(element) + TIMES + Integer.toString(element.getImportanceQuantitative()));
+					if (splitElements.contains(element)) {
+						actorTimesWeight.add(FeatureExport.modifyName(element.getName()) + TIMES + Integer.toString(element.getImportanceQuantitative()));
+					} else {
+						actorTimesWeight.add(elementMap.get(element) + TIMES + Integer.toString(element.getImportanceQuantitative()));
+					}
+//					actorTimesWeight.add(elementMap.get(element) + TIMES + Integer.toString(element.getImportanceQuantitative()));
+//					boolean hasIndicator = false;
+					// checking the element for indicator condition
+//					for (Iterator iterator = element.getLinksDest().iterator(); iterator.hasNext();) {
+//						ElementLink srcLink = (ElementLink) iterator.next();
+//						IntentionalElement srcElement = (IntentionalElement) (srcLink.getSrc());
+//						if (srcElement.getType().getName().equals("Indicator")) {
+//							hasIndicator = true;
+//						}
+//					}
+//					if (hasIndicator) {
+//						actorTimesWeight.add(FeatureExport.modifyName(element.getName()) + TIMES
+//								+ Integer.toString(element.getImportanceQuantitative()));
+//						splitElements.add(element);
+//					} else {
+//						actorTimesWeight
+//								.add(elementMap.get(element) + TIMES + Integer.toString(element.getImportanceQuantitative()));
+//					}
 				}
 			}
 			if (!hasElementInActor)
@@ -610,7 +643,22 @@ public class ExportGRLMathS implements IURNExport {
 				formula.append(Integer.toString(Math.max(quantSum, dNum)));
 			}
 			function.append(EQUALS);
+
+//			function.append(MAX);
+//			function.append(LEFT_BRACKET);
+//			function.append("0");
+//			function.append(COMMA);
+//			function.append(MIN);
+//			function.append(LEFT_BRACKET);
+//			function.append("100");
+//			function.append(COMMA);
+//			function.append(LEFT_BRACKET);
+
 			function.append(formula);
+
+//			function.append(RIGHT_BRACKET);
+//			function.append(RIGHT_BRACKET);
+//			function.append(RIGHT_BRACKET);
 
 			write("# " + FeatureExport.modifyName(actor.getName()) + " Actor function\n");
 			write(function.toString());
@@ -620,7 +668,7 @@ public class ExportGRLMathS implements IURNExport {
 	}
 
 	/**
-	 * If there is no actor in the model, then it would be as if there was one big
+	 * If there is no actor in the model, then it would be as if there were one big
 	 * actor with weight 100 that contained everything.
 	 * 
 	 * If there are actors but they have no weight, then these actors should be
@@ -630,7 +678,7 @@ public class ExportGRLMathS implements IURNExport {
 	 * @throws IOException
 	 */
 	private void writeModel(URNspec urn) throws IOException {
-
+		
 		modelFormula = new StringBuffer();
 		StringBuffer function = new StringBuffer();
 		List<Actor> actorList = new ArrayList<Actor>();
@@ -689,7 +737,7 @@ public class ExportGRLMathS implements IURNExport {
 	}
 
 	private StringBuffer modelWithoutActor(URNspec urn) throws IOException {
-		List<IntentionalElement> eleList = new ArrayList<IntentionalElement>(); // the elements in the actor
+		List<IntentionalElement> eleList = new ArrayList<IntentionalElement>();	// the elements in the actor
 		StringBuffer formula = new StringBuffer();
 		List<Integer> quaList = new ArrayList<Integer>();
 		List<String> actorTimesQua = new ArrayList<String>();
@@ -952,6 +1000,25 @@ public class ExportGRLMathS implements IURNExport {
 		return formula;
 	}
 
+	// add the elements in the list[]
+	private Set<String> elementList() throws IOException {
+		Set<String> elementListSet = new HashSet<String>();
+		for (Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
+			if (modelFormula.toString().contains(entry.getKey().getName().toString())) {
+				elementListSet.add("'" + FeatureExport.modifyName(entry.getKey().getName()) + "'");
+			}
+		}
+		if (!splitElements.isEmpty()) {
+			for (IntentionalElement e : splitElements) {
+				elementListSet.add("'" + FeatureExport.modifyName(e.getName()) + "'");
+			}
+		}
+		if (!elementSet.isEmpty()) {
+			elementListSet.addAll(elementSet);
+		}
+		return elementListSet;
+	}
+	
 	/**
 	 * Writes the translation of the elements to SymPy
 	 * 
@@ -959,27 +1026,18 @@ public class ExportGRLMathS implements IURNExport {
 	 * @throws IOException
 	 */
 	private void writeTranslation(URNspec urn) throws IOException {
-		List<String> dictElements = new ArrayList<String>();
+		
 		write("GRLDiagramName " + EQUALS + " '" + FeatureExport.modifyName(GRLname) + "' " + "\n");
+		Set<String> dictElements = new LinkedHashSet<String>();
 		StringBuffer varList = new StringBuffer();
+		StringBuffer allprint = new StringBuffer();
+		StringBuffer tranScript = new StringBuffer();
+		
 		varList.append("List");
 		// varList.append(urn.getName());
 		varList.append(EQUALS);
 		varList.append("[");
-		List<String> eleList = new ArrayList<String>();
-		eleList.addAll(elementSet);
-		// adding the separated elements to the list
-		for (IntentionalElement e : splitElements) {
-			eleList.add("'" + FeatureExport.modifyName(e.getName()) + "'");
-		}
-		// String message = String.join("-", list); 
-		varList.append(String.join(",", eleList));
-		varList.append("]");
-		write("\n# Variable list");
-		write("\n");
-		write(varList.toString());
 
-		StringBuffer tranScript = new StringBuffer();
 		tranScript.append("Translate");
 		tranScript.append(LEFT_BRACKET);
 		tranScript.append("'");
@@ -997,18 +1055,21 @@ public class ExportGRLMathS implements IURNExport {
 		tranScript.append(COMMA);
 		tranScript.append("dict");
 		tranScript.append(RIGHT_BRACKET);
-		write("\nLANG = []\n" + "langList = ['python','c','c++','java',\"javascript\",'matlab','r']\n");
 
-		StringBuffer allprint = new StringBuffer();
-		write("def allPrint():\n");
-		// initializing a python dictionary
-		write("\tdict = {\n");
 		// writing all the separated indicators in the dictionary
 		writeIndependentIndicators(urn.getGrlspec().getIntElements().iterator(), dictElements);
-		// writing all the separated leaf features in the dictionary
-		//writeLeafFeatures(dictElements);
-		// writing all the separated functions in the dictionary
-		writeSeparatedElements(dictElements);
+	  // writing all the separated functions in the dictionary
+		writeIndependentFunction(dictElements);
+		// printing all write() from here
+		write("\n# Variable list\n");
+		varList.append(String.join(",", elementList()));
+		varList.append("]");
+		write(varList.toString());
+		write("\nLANG = []\n" + "langList = ['python','c','c++','java',\"javascript\",'matlab','r']\n");
+		write("def allPrint():\n");
+		// initializing a Python dictionary
+		write("\tdict = {\n");
+		// joining the elements of the dict
 		String joinFunctions = String.join(",\n", dictElements);
 		write(joinFunctions);
 		write("\n\t}\n");
@@ -1039,19 +1100,37 @@ public class ExportGRLMathS implements IURNExport {
 		// }
 
 	}
+	
+	/**
+	 * Writes the separated leaf features to SymPy
+	 *
+	 * @throws IOException
+	 */
+//	private void writeLeafFeatures(List<String> list) throws IOException {
+//		String formula, formula1 = null;
+//		for (Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
+//			String elementName = FeatureExport.modifyName(entry.getKey().getName().toString());
+//			if (elementSet.contains("'" + elementName + "'") && entry.getKey().getType().getName().equalsIgnoreCase("Task") && entry.getValue().toString().contains(LEFT_BRACKET)) {
+//				formula = new String(entry.getValue());
+//				list.add("\t\t'" + elementName + "'" + COLON + "'" + formula + "'");
+//			}
+//			if (FeatureExport.IsItLeaf(entry.getKey()) && !elementSet.contains("'" + elementName + "'")) {
+//				formula1 = new String(entry.getValue());
+//				list.add("\t\t'" + elementName + "'" + COLON + "'" + formula1 + "'");
+//			}
+//		}
+//	}
 
 	/**
 	 * Writes the separated indicators to SymPy
 	 *
 	 * @throws IOException
 	 */
-	private void writeIndependentIndicators(Iterator iterator, List<String> list) throws IOException {
-		String formula = new String();
+	private void writeIndependentIndicators(Iterator iterator, Set<String> list) throws IOException {
 		while (iterator.hasNext()) {
 			IntentionalElement IndicatorV = (IntentionalElement) iterator.next();
 			if (IndicatorV.getType().getName().compareTo("Indicator") == 0) {
-				list.add("\t\t'" + FeatureExport.modifyName(IndicatorV.getName()) + "'" + COLON + "'"
-						+ elementMap.get(IndicatorV).toString() + "'");
+				list.add("\t\t'" + FeatureExport.modifyName(IndicatorV.getName()) + "'" + COLON + "'" + elementMap.get(IndicatorV).toString() + "'");
 			}
 		}
 	}
@@ -1061,8 +1140,19 @@ public class ExportGRLMathS implements IURNExport {
 	 *
 	 * @throws IOException
 	 */
-	private void writeSeparatedElements(List<String> list) throws IOException {
+	private void writeIndependentFunction(Set<String> list) throws IOException {
 
+		// leaf feature
+		String formula1 = null;
+		for (Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
+			String elementName = FeatureExport.modifyName(entry.getKey().getName().toString());
+			if (FeatureExport.IsItLeaf(entry.getKey()) && !elementSet.contains("'" + elementName + "'")) {
+				formula1 = new String(entry.getValue());
+				list.add("\t\t'" + elementName + "'" + COLON + "'" + formula1 + "'");
+				splitElements.add(entry.getKey());
+			}
+		}
+		// independent elements for contribution
 		if (!splitElements.isEmpty()) {
 			String formula;
 			for (IntentionalElement e : splitElements) {

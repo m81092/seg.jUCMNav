@@ -504,6 +504,12 @@
             id="seg.jUCMNav.ExportGRLMathS"
             name="%GRLMathS"
             useStream="false"/>
+	  <exporter
+            class="seg.jUCMNav.importexport.ExportGRLMathSimplify"
+            extension="py"
+            id="seg.jUCMNav.ExportGRLMathSimplify"
+            name="%GRLMathSimplify"
+            useStream="false"/>
       <exporter
             class="seg.jUCMNav.importexport.ExportGRLCatalog"
             extension="grl"

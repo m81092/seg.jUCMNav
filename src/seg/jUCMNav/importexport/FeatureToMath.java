@@ -1,5 +1,13 @@
+/* Amal Ahmed Anda
+ * 
+ */
 package seg.jUCMNav.importexport;
-
+/**
+ * this class export the Feature model into sympy function
+ * 
+ * @author Amal Ahmed Anda
+ *
+ */
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -14,17 +22,13 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.draw2d.IFigure;
-
 import fm.Feature;
 import fm.FeatureDiagram;
 import fm.MandatoryFMLink;
 import fm.OptionalFMLink;
 import grl.Decomposition;
 import grl.ElementLink;
-import grl.GRLGraph;
 import grl.IntentionalElement;
-import seg.jUCMNav.extensionpoints.IURNExport;
 import seg.jUCMNav.views.wizards.importexport.ExportWizard;
 import urn.URNlink;
 import urn.URNspec;
@@ -37,13 +41,13 @@ public class FeatureToMath   {
 	public static final String LeftBracker = "(";
 	public static final String RightBracker = ")";
 	public static final String Comma = ",";
-	public static final String Equal = "=";
+	public static final String Equal = "= ";
 	public static final String Sym = "symbols";
 	public static final String Times = "*";
-	public static final String Divide = "/";
-	public static final String Plus = "+";
-	public static final String Minus = "-";
-	public static final String Multi = "*";
+	public static final String Divide = " / ";
+	public static final String Plus = " + ";
+	public static final String Minus = " - ";
+	public static final String Multi = " * ";
 	
 
 	private Map<IntentionalElement, StringBuffer> eleForMap;// store elements and the functions .
@@ -66,15 +70,16 @@ public class FeatureToMath   {
 			fos = new FileOutputStream(new File(filename),true);
 			for (Iterator iter = mapDiagrams.keySet().iterator(); iter.hasNext();) {
 	    		IURNDiagram diagram = (IURNDiagram) iter.next();
-	    		//if (diagram instanceof FeatureDiagram)
+	    		if (diagram instanceof FeatureDiagram) {
 	    		String diagramName = ExportWizard.getDiagramName(diagram);
 	    		String purName =  diagramName.substring(diagramName.lastIndexOf("-") + 1);
-	    		//System.out.println("Diagram information="+diagram.toString()+" name="+diagramName+" PureNam= "+purName);
+	    		//// // System.out.println("Diagram information="+diagram.toString()+" name="+diagramName+" PureNam= "+purName);
 	    		FMname=	purName;
+	    		}
 			}
-			System.out.println(filename+urn.getName());
+			// // System.out.println(filename+urn.getName());
 			writeFormula(urn);
-			System.out.println("After formula");
+			// // System.out.println("After formula");
 			writeModel(urn);
 			writeTranslation(urn);
 		} catch (Exception e) {
@@ -115,8 +120,6 @@ public class FeatureToMath   {
 	for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) { 
 		
 			IntentionalElement element = (IntentionalElement) it.next();
-			 System.out.println("after declaration");
-			 System.out.println(element.getName().toString());
 			if (element instanceof Feature || element.getType().getName().equalsIgnoreCase("Task")) {
 			StringBuffer variable = new StringBuffer();
 			variable.append(modifyName(element.getName()));
@@ -150,35 +153,31 @@ public class FeatureToMath   {
 					eleFormula.append(modifyName(element.getName()));
 				
 				elementSet.add("'" + modifyName(element.getName()) + "'");
-				 System.out.println(eleFormula.toString() + "----leaf formula");
+				 // // System.out.println(eleFormula.toString() + "----leaf formula");
 				eleForMap.put(element, eleFormula);
 			}
 		}
        for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
     	   IntentionalElement element = (IntentionalElement) it.next();
     	   leaf=IsItLeaf(element);
-			// feature has indicator only should consider as leaf feature
-		   //if (element.getLinksDest().size() != 0){
-			// Iterator it2 = element.getLinksDest().iterator(); it2.hasNext(); 
-			//	ElementLink scrLink = (ElementLink) it2.next();
-			//	IntentionalElement srcElement = (IntentionalElement) (scrLink.getSrc());
-			 //   if (srcElement.getType().getName().compareTo("Indicator") == 0) {
-			 //   	leaf=true;
-			//    }
-			//}
+			
 			
 			if (((element instanceof Feature || element.getType().getName().equalsIgnoreCase("Task")) && ((element.getLinksDest().size() == 0 || leaf))  && (element.getToLinks().size() != 0 ||  element.getFromLinks().size() != 0))) {
 				  eleFormula = new StringBuffer();
 				  function = new StringBuffer();
+				  StringBuffer functionb = new StringBuffer();
+				  functionb.append(ExcludeIncludeLink(element));
+				  if (functionb.length() != 0) {
 				  function.append(modifyName(element.getName()));
-				  eleFormula.append(ExcludeIncludeLink(element));
-					// // // // System.out.println(element.getName() +"="+ eleFormula.toString() + "Next iteration for leaf features");
+				  eleFormula.append(functionb);
+				  
+					// System.out.println(element.getName() +"="+ eleFormula.toString() + "After enclude exclude for leaf features");
 					function.append(Equal);
 					function.append(eleFormula);
 					write(function.toString());
 					write("\n");
 					eleForMap.put(element, eleFormula);
-			}
+			}}
         }
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			
@@ -193,7 +192,7 @@ public class FeatureToMath   {
 			  // || 
 			 // if ((element.getLinksDest().size() != 0) ) {
 				eleFormula.append(writeLink(element));
-				// // // // System.out.println(element.getName() +"="+ eleFormula.toString() + "Next iteration");
+				// System.out.println(element.getName() +"="+ eleFormula.toString() + "Next iteration");
 				function.append(Equal);
 				function.append(eleFormula);
 				write(function.toString());
@@ -207,16 +206,23 @@ public class FeatureToMath   {
 	// check leaf features
 		public boolean IsItLeaf(IntentionalElement element) throws IOException {
 			// feature has indicator only should consider as leaf feature
+			
 			if (element.getLinksDest().size() != 0){
-			Iterator it2 = element.getLinksDest().iterator(); it2.hasNext(); 
+			  for (Iterator it2 = element.getLinksDest().iterator(); it2.hasNext();) { 
 				ElementLink scrLink = (ElementLink) it2.next();
-				IntentionalElement srcElement = (IntentionalElement) (scrLink.getSrc());
-			    if (srcElement.getType().getName().compareTo("Indicator") == 0) {
-			    	return true;
-			    }
-			    else 
-			    	{return false;}
-			}
+				if (scrLink.getClass().getTypeName().contains("pendency")==false){
+				//// System.out.println("name of Link leaffffff"+scrLink.getName()+" Typename="+scrLink.getClass().getTypeName());
+				    IntentionalElement srcElement = (IntentionalElement) (scrLink.getSrc());
+			        if ((srcElement.getType().getName().toString().contains("ndicator") == false)) { 
+			        	//// System.out.println("Not leaf"+element.getName());
+			    	     return false;
+			          }
+			     
+			} 
+				}
+			  //// System.out.println("from first true leaf"+element.getName());
+			  return true;
+			  }
 			else
 				{return true;}
 		}
@@ -230,10 +236,10 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 		List<IntentionalElement> IncludelList = new ArrayList<IntentionalElement>();
 						
 		// ToLink include and exclude
-		List  urnLinks =  element.getToLinks();
+		/*List  urnLinks =  element.getToLinks();
         for (int i = 0; i < urnLinks.size(); i++) {
             if (( (URNlink) urnLinks.get(i)).getToElem() instanceof IntentionalElement) {
-                IntentionalElement intElem = (IntentionalElement) ( (URNlink) urnLinks.get(i)).getToElem();
+                //IntentionalElement intElem = (IntentionalElement) ( (URNlink) urnLinks.get(i)).getToElem();
                 IntentionalElement SourceElem = (IntentionalElement) ( (URNlink) urnLinks.get(i)).getFromElem();
                 
                 if (( (URNlink) urnLinks.get(i)).getType().compareToIgnoreCase("exclude") == 0)
@@ -241,7 +247,7 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
                 
                 
             }
-        }
+        }*/
      // From element Link
         List  urnLinkf =  element.getFromLinks();
         for (int i = 0; i < urnLinkf.size(); i++) {
@@ -261,23 +267,23 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
       // after calculate exclude and include features  
         if (!ExcludelList.isEmpty() ) {
         	//ExcludeFor.append(writeSMax(element,"Max"));
-        	ExcludeFor.append("Min(0,");
+        	ExcludeFor.append("Max(0,");
         	ExcludeFor.append(writeDecomMaxMin(S(element),"Max",0));
         	ExcludeFor.append(Minus);
             ExcludeFor.append(writeSMax(ExcludelList,"Max"));
             ExcludeFor.append(")");
-            // // // System.out.println("Exclude function "+ExcludeFor.toString());
+            // // // // // System.out.println("Exclude function "+ExcludeFor.toString());
         }
         
         if (!IncludelList.isEmpty() ) {
         	//includeFor.append(writeSMax(IncludelList,"Min"));
-        	includeFor.append("(( Min(0,(");
+        	includeFor.append("(((");
         	includeFor.append(writeDecomMaxMin(S(element),"Max", 0));
         	includeFor.append(Plus);
         	includeFor.append(writeSMax(IncludelList,"Min"));
         	includeFor.append(")");
-        	includeFor.append(Divide+" 200.0 )");
-        	includeFor.append(" ) "+Times+" 100.0 )");
+        	includeFor.append(Divide+"200.0 )");
+        	includeFor.append(Times+" 100.0 )");
         	if (!ExcludelList.isEmpty() ) {
         	formulaex.append("Min(");
         	formulaex.append(ExcludeFor);
@@ -289,7 +295,7 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
         	 {
         		formulaex=includeFor; 
         	 }
-            // // // System.out.println("Include function"+includeFor.toString());
+            // // // // // System.out.println("Include function"+includeFor.toString());
         }
         else { if (!ExcludelList.isEmpty() )
         	formulaex=ExcludeFor;
@@ -332,7 +338,7 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 		// get the exclude and include formula
         formulaex=ExcludeIncludeLink(element);
         
-      // for other link types
+      
 		
 		for (Iterator it = element.getLinksDest().iterator(); it.hasNext();) {
 			ElementLink scrLink = (ElementLink) it.next();
@@ -340,19 +346,24 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 			srcList.add(srcElement);
 			StrEle.add(modifyName(srcElement.getName()));
 			
-			// // // System.out.println("linkName"+scrLink.getName());
+			
 			
 			if (scrLink instanceof Decomposition) {
 				decomList.add(srcElement);
 			}
-			if (scrLink instanceof MandatoryFMLink) {
+			
+				 
+			  if (scrLink instanceof MandatoryFMLink) {
+				// System.out.println("Kosheeeeeeeeeeeeeeeeet fe Mandatory");
 				mandatoryList.add(srcElement);
 				
-			}
-			if (scrLink instanceof OptionalFMLink) {
+			   }
+			  if (scrLink instanceof OptionalFMLink) {
+				// System.out.println("Kosheeeeeeeeeeeeeeeeet fe Optionallllllllll");
 				optionalList.add(srcElement);
 				opLink.add(scrLink);
-			}
+			  }
+			
 			eleMap.put("Decomposition", decomList);
 			eleMap.put("MandatoryFMLink", mandatoryList);
 			eleMap.put("OptionalFMLink", optionalList);
@@ -365,32 +376,33 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
                 {
 				  funcTpye = "Min";
 				  decomFor.append(writeDecomMaxMin(decomList, funcTpye,1));
-				 // // // // System.out.println(decomFor.toString() + " Fee decomposition");
+				 // // System.out.println(decomFor.toString() + " Fee decomposition");
 				  
                 }
 				
 			
 			if (element.getDecompositionType().getName() == "Or") { 
 				decomFor.append(writeORSum(decomList));
-				// System.out.println(decomFor.toString() + " after return  from OR in writeLink");
+				// // System.out.println(decomFor.toString() + " after return  from OR in writeLink");
 				 
 			}
 			
 			if (element.getDecompositionType().getName() == "Xor") {
 				
 				decomFor.append(writeXORSum(decomList));
+				// // System.out.println(decomFor.toString() + " after return  from XOR in writeLink");
 			}
 			minix=decomFor;
 			
 		}
-
+		// System.out.println("Mandatoryyyyyyyyyyyyyy="+mandatoryList.toString());
 		
 	 if (!mandatoryList.isEmpty() )
                {
 		         
 				  funcTpye = "Min";
 				  mandatoryFor.append(writeDecomMaxMin(mandatoryList, funcTpye, 1));
-				//  // // // System.out.println(mandatoryFor.toString() + " Fee mandatory");
+				 // System.out.println(mandatoryFor.toString() + " Feeeeeee mandatory");
 				 if (!decomList.isEmpty()) {
                      minix2.append("Min(");
                      minix2.append(minix);
@@ -398,14 +410,14 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 				     minix2.append(mandatoryFor);
 				     minix2.append(")");
 				 }
-				 else minix2= mandatoryFor;
+				 else minix2.append(mandatoryFor); //minix2= mandatoryFor;
                }
 			
 			 
 		if (!optionalList.isEmpty()) {
 			
 			 opFor.append( writeOptionalSum(optionalList));
-			// System.out.println( opFor.toString() + " after return");
+			// System.out.println( opFor.toString() + " after return from optional");
 			 if (minix2.length() > 0) {
 				 minix3.append("Min(");
 				 minix3.append(minix2);
@@ -421,7 +433,7 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 			     minix3.append(minix);
 			     minix3.append(")");
 			 }
-			 else minix3=opFor;
+			 else  minix3.append(opFor);//minix3=opFor;
 				 
 			 }
 			 }
@@ -434,10 +446,10 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 				  formula=minix;
 		
       if (formulaex.length() > 0) {
-    	  // System.out.println(formula+ "before exclude insert");
+    	  // // // // // System.out.println(formula+ "before exclude insert");
     	  formula.insert(0,"Min("+formulaex+Comma);
     	  formula.append(")");
-    	  // System.out.println(formula+ "baed exclude insert");
+    	  // // // // // System.out.println(formula+ "baed exclude insert");
     	  
       }
 			
@@ -445,21 +457,34 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 		for (Iterator<IntentionalElement> it = srcList.iterator(); it.hasNext();) {
 			IntentionalElement subEle = it.next();
 			// if sub element is not the leaf.
+			// System.out.println(subEle.getName()+ " "+subEle.getType().getName()+" ++++++fe for kabel if");
 			StringBuffer subFor = new StringBuffer();
-			if ((subEle instanceof Feature || subEle.getType().getName().equalsIgnoreCase("Task"))&& subEle.getType().getName().compareTo("Indicator") != 0) {
-			if (subEle.getLinksDest().size() != 0 && ( (subEle instanceof Feature) && subEle.getType().getName().equalsIgnoreCase("Task"))) {
+			if ((subEle instanceof Feature || subEle.getType().getName().equalsIgnoreCase("Task"))&& subEle.getType().getName().compareTo("Indicator") != 0) 
+			{
+				// System.out.println("Deslink="+subEle.getLinksDest().size()+" sourceLink="+subEle.getLinksSrc().size()+" "+subEle.getName()+ "afer first if");
+			if  (!IsItLeaf(subEle)) //(subEle.getLinksDest().size() != 0 && ( (subEle instanceof Feature) && subEle.getType().getName().equalsIgnoreCase("Task")))
+			{
+				// System.out.println(subEle.getName()+ "afer two if");
+				
 				if (eleForMap.get(subEle) == null) {
+					// System.out.println(subEle.getName()+ "khash fe sub");
 					subFor = writeLink(subEle);
 				} else {
-					// // // System.out.println("you have subfor!");
+					// // // // // System.out.println("you have subfor!");
 					subFor = eleForMap.get(subEle);
 				}
-				formula = new StringBuffer(
+				// System.out.println(subFor.toString()+"  "+subEle.getName()+ " Kabel replace");
+				 formula = new StringBuffer(
 						formula.toString().replaceAll(modifyName(subEle.getName()), subFor.toString()));
+				 // System.out.println(formula.toString()+"  "+subEle.getName()+ " baed replace");
 			}
+			
 			}
 			
 		}
+		//formula = new StringBuffer(
+		//		formula.toString().replaceAll(modifyName(subEle.getName()), subFor.toString()));
+		// System.out.println(formula+ " formula after replace");
 		return formula;
 	}
 
@@ -495,7 +520,7 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 		// && element.getLinksDest().size() == 0 &&
 		if (eleForMap.get(element) != null && IsItLeaf(element))
             {
-		// // // System.out.println("you have subfor!");
+		// // // // // System.out.println("you have subfor!");
 			formula = eleForMap.get(element).toString();
 		
 	      }
@@ -581,20 +606,22 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 		List<IntentionalElement> formula = new ArrayList<IntentionalElement>();
 		Iterator it2 = element.getLinksDest().iterator();
 		if (!it2.hasNext()) {
+			if ((element.getType().getName().compareTo("Indicator") != 0)&& (element instanceof Feature || element.getType().getName().equalsIgnoreCase("Task"))) {
 			
 				formula.add(element);
-					}	
+					}}	
 		else {
 			for (Iterator it = element.getLinksDest().iterator(); it.hasNext();) {
 				ElementLink scrLink = (ElementLink) it.next();
 			    IntentionalElement srcElement = (IntentionalElement) (scrLink.getSrc());
-			    if (srcElement.getType().getName().compareTo("Indicator") != 0) {
+			    if ((srcElement.getType().getName().compareTo("Indicator") != 0) && (srcElement instanceof Feature || srcElement.getType().getName().equalsIgnoreCase("Task"))){
 			    formula.add((IntentionalElement) S(srcElement).get(0));
 			    }
 			    else {
+			    	if ((element.getType().getName().compareTo("Indicator") != 0)&& (element instanceof Feature || element.getType().getName().equalsIgnoreCase("Task"))) {
 			    	formula.add(element);
 			    	break;
-			    }
+			    }}
 			    
 			  	}	
 		}
@@ -648,62 +675,63 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 	// for OR function
 	private StringBuffer writeORSum(List<IntentionalElement> list) throws IOException {
 		StringBuffer formula = new StringBuffer();
-		// Stack<StringBuffer> st = new Stack<StringBuffer>();
-		formula.append("Max");
-		formula.append(LeftBracker+"0.0"+Comma);
-		formula.append(LeftBracker);
+			
+		
 		formula.append(writeSum(list));
-		formula.append(RightBracker);
+		
 		formula.append(Divide);
 		formula.append("Max");
-		formula.append(LeftBracker+"1.0"+Comma);
+		formula.append(LeftBracker+"1 "+Comma);
 		formula.append(writeSSum(list));
-		formula.append(RightBracker);
 		formula.append(RightBracker);
 		formula.append(Times);
 		formula.append("100.0");
-		// System.out.println("writeOR="+formula.toString());
+		// System.out.println("writeOOOOOOOOOOOOOOOOR="+formula.toString());
 		return formula;
 	}
 
 	private StringBuffer writeXORSum(List<IntentionalElement> list) throws IOException {
 		StringBuffer formula = new StringBuffer();
-		// Stack<StringBuffer> st = new Stack<StringBuffer>();
-		formula.append("Max");
-		formula.append(LeftBracker+"0.0"+Comma);
+				
 		formula.append(LeftBracker);
 		formula.append(writeDecomMaxMin(list,"Max",1));
 		formula.append(RightBracker);
 		formula.append(Divide);
 		formula.append("Max");
-		formula.append(LeftBracker+"1.0"+Comma);
+		formula.append(LeftBracker+"1"+Comma);
 		formula.append(writeSSum(list));
-		formula.append(RightBracker);
-		formula.append(RightBracker);
+		formula.append(RightBracker);		
 		formula.append(Times);
 		formula.append("100.0");
 		return formula;
 	}
 	private StringBuffer writeOptionalSum(List<IntentionalElement> list) throws IOException {
-		StringBuffer formula = new StringBuffer();		
+		StringBuffer formula = new StringBuffer();	
+		StringBuffer Mxv = new StringBuffer();
 		formula.append("Piecewise");
 		formula.append(LeftBracker);
 		formula.append(LeftBracker);
 		formula.append("100");
 		formula.append(Comma);
-		formula.append(LeftBracker);
-		formula.append(writeSMax(list, "Max"));
-		formula.append("==");
+		//formula.append(LeftBracker);
+		Mxv=writeSMax(list, "Max");
+		formula.append(Mxv);
+		formula.append("<=");
 		formula.append("0");
-		formula.append(RightBracker);
+		//formula.append(RightBracker);
 		formula.append(RightBracker);
 		formula.append(Comma);
 		formula.append(LeftBracker);
-		formula.append(LeftBracker);
+		//formula.append(LeftBracker);
 		formula.append(writeORSum(list));
-		formula.append(RightBracker);
+		//formula.append(RightBracker);
 		formula.append(Comma);
+		//formula.append(LeftBracker);
+		//formula.append(Mxv);
+		//formula.append(">");
+		//formula.append("0");
 		formula.append("True");
+		//formula.append(RightBracker);
 		formula.append(RightBracker);
 		formula.append(RightBracker);
 		
@@ -750,7 +778,7 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 			IntentionalElement ele = (IntentionalElement) it.next();
 			// Get formula of Root feature
 			if ((ele instanceof Feature || ele.getType().getName().equalsIgnoreCase("Task")) && ele.getLinksSrc().size() <= 0 && ele.getLinksDest().size() > 0) {
-			    System.out.print("Fee src=0 Root feature="+ele.getName().toString());
+			    // // System.out.print("Fee src=0 Root feature="+ele.getName().toString());
 			   formula = eleForMap.get(ele);
 			}
 		}
@@ -762,7 +790,7 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 	private void writeTranslation(URNspec urn) throws IOException {
 		// indicator
 		String modelName = modifyName(FMname);
-		write("modelName " + Equal + " '" + modifyName(FMname) + "' " + "\n");
+		write("FMDiagramName " + Equal + " '" + modifyName(FMname) + "' " + "\n");
 		StringBuffer varList = new StringBuffer();
 		varList.append("List");
 		//varList.append(urn.getName());
@@ -773,9 +801,10 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 		// String message = String.join("-", list); 
 		varList.append(String.join(",", eleList));
 		varList.append("]");
-		write(varList.toString());
-		write("#variable list");
+		write("\n#variable list");
 		write("\n");
+		write(varList.toString());
+		
 
 		StringBuffer tranScript = new StringBuffer();
 		tranScript.append("Translate");
@@ -784,28 +813,35 @@ private StringBuffer ExcludeIncludeLink(IntentionalElement element) throws IOExc
 		tranScript.append(modelFormula);
 		tranScript.append("'");
 		tranScript.append(Comma);
-		tranScript.append("modelName");// model's name
+		tranScript.append("FMDiagramName");// model's name
 		tranScript.append(Comma);
 		tranScript.append("List");
 		//tranScript.append(urn.getName());
 		tranScript.append(Comma);
 		tranScript.append("LANG");
 		tranScript.append(RightBracker);
-		write("LANG = ''\n" + "langList = ['python','c','c++','java',\"javascript\",'matlab','r']\n");
+		write("\nLANG = []\n" + "langList = ['python','c','c++','java',\"javascript\",'matlab','r','cp']\n");
 
 		StringBuffer allprint = new StringBuffer();
 		allprint.append("def allPrint():\n");
-		allprint.append("\tfor j in langList:\n");
-		allprint.append("\t\tLANG = str(j)\n");
+		//allprint.append("\tfor j in langList:\n");
+		//allprint.append("\t\tLANG = 'All'\n");
+		write("\n");
+		write(varList.toString()+"\n");
 		allprint.append("\t\t" + tranScript + "\n");
 		write(allprint.toString());
-		StringBuffer scriptLang = new StringBuffer("if(len(sys.argv)==1):\n" + "\tallPrint()\n" + "else:\n"
+		StringBuffer scriptLang = new StringBuffer("if(len(sys.argv)==1):\n\tLANG = langList\n" + "\tallPrint()\n" + "else:\n"
 				+ "\tfor i in sys.argv:\n" + "\t\tif(sys.argv.index(i)==0):continue\n"
-				+ "\t\tif  (i.lower() not in langList):\n" + "\t\t\tfor j in langList:\n"+"\t\t\t\t"
-						+ "LANG = str(j)\n" + "\t\t\t\t" + "allPrint()"
-				+ "\n" + "\t\telse:\n" + "\t\t\tprint 'in'\n" + "\t\t\tLANG = str(i.lower())\n"
+				+ "\t\tif  (i.lower() not in langList):\n" + "\t\t\t"
+						+ "LANG = langList\n" + "\t\t\tbreak"
+				+ "\n" + "\t\telse:\n" + "\t\t\tLANG.append(str(i.lower()))\n\tallPrint()\n");
+		//StringBuffer scriptLang = new StringBuffer("if(len(sys.argv)==1):\n"+"\tLANG = 'All'\n" + "\tallPrint()\n" + "else:\n"
+		//		+ "\tfor i in sys.argv:\n" + "\t\tif(sys.argv.index(i)==0):continue\n"
+		//		+ "\t\tif  (i.lower() not in langList):\n" + "\t\t\tfor j in langList:\n"+"\t\t\t\t"
+		//				+ "LANG = str(j)\n" + "\t\t\t\t" + "allPrint()"
+		//		+ "\n" + "\t\telse:\n" + "\t\t\tprint 'in'\n" + "\t\t\tLANG = str(i.lower())\n\t\t\tallPrint()");
 				// +"\t\t\tprint LANG\n"
-				+ "\t\t\t" + tranScript + "\n");
+				//+ "\t\t\t" + tranScript + "\n");
 		write(scriptLang.toString());
 
 	}
