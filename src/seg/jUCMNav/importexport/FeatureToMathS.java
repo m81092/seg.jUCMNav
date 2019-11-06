@@ -48,9 +48,13 @@ public class FeatureToMathS {
 	public static final String MINUS = " - ";
 	public static final String MULTI = " * ";
 
-	private Map<IntentionalElement, StringBuffer> eleForMap;// store elements and the functions .
+	//store elements and the functions
+	private Map<IntentionalElement, StringBuffer> elementMap;
 	private StringBuffer modelFormula;
+	// stores the leaf elements
 	private HashSet<String> elementSet = new HashSet<String>();
+	// stores the separated elements
+	private HashSet<IntentionalElement> splitElements = new HashSet<IntentionalElement>();
 
 	// check if there are features in the feature diagram
 	public void export(URNspec urn, HashMap mapDiagrams, String filename) throws InvocationTargetException {
@@ -80,6 +84,9 @@ public class FeatureToMathS {
 				writeFormula(urn);
 				writeModel(urn);
 				writeTranslation(urn);
+//				for (Map.Entry<IntentionalElement, StringBuffer> map : eleForMap.entrySet()) {
+//					System.out.println("the element is " +map.getKey().getName() +" ->> " + map.getValue());
+//				}
 				
 			} catch (Exception e) {
 				throw new InvocationTargetException(e);
@@ -107,7 +114,7 @@ public class FeatureToMathS {
 	 */
 	private void writeFormula(URNspec urn) throws IOException {
 
-		eleForMap = new HashMap<IntentionalElement, StringBuffer>();
+		elementMap = new HashMap<IntentionalElement, StringBuffer>();
 		StringBuffer eleFormula;
 		StringBuffer function;
 		// initialize all the symbols
@@ -146,11 +153,11 @@ public class FeatureToMathS {
 				eleFormula.append(modifyName(element.getName()));
 
 				elementSet.add("'" + modifyName(element.getName()) + "'");
-				eleForMap.put(element, eleFormula);
+				elementMap.put(element, eleFormula);
 			}
 		}
 		
-		write("# Non-leaf feature functions\n");
+		write("# Leaf Feature functions\n");
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
 			leaf = IsItLeaf(element);
@@ -172,10 +179,13 @@ public class FeatureToMathS {
 					function.append(eleFormula);
 					write(function.toString());
 					write("\n");
-					eleForMap.put(element, eleFormula);
+					splitElements.add(element);
+					elementMap.put(element, eleFormula);
 				}
 			}
 		}
+		
+		write("# Non-leaf Feature functions\n");
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 
 			IntentionalElement element = (IntentionalElement) it.next();
@@ -196,11 +206,12 @@ public class FeatureToMathS {
 				function.append(eleFormula);
 				write(function.toString());
 				write("\n");
-				eleForMap.put(element, eleFormula);
+				elementMap.put(element, eleFormula);
 
 			}
 		}
 	}
+
 
 	// check leaf features
 	public boolean IsItLeaf(IntentionalElement element) throws IOException {
@@ -435,10 +446,10 @@ public class FeatureToMathS {
 																// subEle.getType().getName().equalsIgnoreCase("Task")))
 				{
 
-					if (eleForMap.get(subEle) == null) {
+					if (elementMap.get(subEle) == null) {
 						subFor = writeLink(subEle);
 					} else {
-						subFor = eleForMap.get(subEle);
+						subFor = elementMap.get(subEle);
 					}
 
 					formula = new StringBuffer(formula.toString().replaceAll(modifyName(subEle.getName()), subFor.toString()));
@@ -483,8 +494,8 @@ public class FeatureToMathS {
 
 		String formula;
 		// && element.getLinksDest().size() == 0 &&
-		if (eleForMap.get(element) != null && IsItLeaf(element)) {
-			formula = eleForMap.get(element).toString();
+		if (elementMap.get(element) != null && IsItLeaf(element)) {
+			formula = elementMap.get(element).toString();
 
 		} else {
 			formula = modifyName(element.getName());
@@ -742,7 +753,7 @@ public class FeatureToMathS {
 			// Get formula of Root feature
 			if ((ele instanceof Feature || ele.getType().getName().equalsIgnoreCase("Task")) && ele.getLinksSrc().size() <= 0
 					&& ele.getLinksDest().size() > 0) {
-				formula = eleForMap.get(ele);
+				formula = elementMap.get(ele);
 			}
 		}
 		return formula;

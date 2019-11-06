@@ -587,14 +587,22 @@ public class ExportGRLMathSimplify implements IURNExport {
 					elementFormula.append(elementMap.get(element));
 					elementFormula.append(RIGHT_BRACKET);
 					if (element.getLinksSrc().size() == 0) {
-						actorTimesWeight.add(elementFormula + TIMES + "100.0");
+						if (splitElements.contains(element)) {
+							actorTimesWeight.add(FeatureExport.modifyName(element.getName()) + TIMES + "100.0");
+						} else {
+							actorTimesWeight.add(elementFormula + TIMES + "100.0");
+						}
 						quantSum += 100;
 					} else {
 						// give the weight to top-level elements;
 						IntentionalElement srcElement = (IntentionalElement) (((ElementLink) (element.getLinksSrc().get(0)))
 								.getDest());
 						if (!elementList.contains(srcElement)) {
-							actorTimesWeight.add(elementFormula + TIMES + "100.0");
+							if (splitElements.contains(element)) {
+								actorTimesWeight.add(FeatureExport.modifyName(element.getName()) + TIMES + "100.0");
+							} else {
+								actorTimesWeight.add(elementFormula + TIMES + "100.0");
+							}
 							quantSum += 100;
 						}
 					}
@@ -908,7 +916,7 @@ public class ExportGRLMathSimplify implements IURNExport {
 		}
 		if (worst > target) {
 			formula.append(LEFT_BRACKET);
-			formula.append("100");
+			formula.append("100.0");
 			formula.append(COMMA);
 			formula.append(currentName);
 			formula.append("<=");
@@ -1067,7 +1075,7 @@ public class ExportGRLMathSimplify implements IURNExport {
 		write(varList.toString());
 		write("\nLANG = []\n" + "langList = ['python','c','c++','java',\"javascript\",'matlab','r']\n");
 		write("def allPrint():\n");
-		// initializing a Python dictionary
+		// initializing a python dictionary named 'dict'
 		write("\tdict = {\n");
 		// joining the elements of the dict
 		String joinFunctions = String.join(",\n", dictElements);
@@ -1101,25 +1109,6 @@ public class ExportGRLMathSimplify implements IURNExport {
 
 	}
 	
-	/**
-	 * Writes the separated leaf features to SymPy
-	 *
-	 * @throws IOException
-	 */
-//	private void writeLeafFeatures(List<String> list) throws IOException {
-//		String formula, formula1 = null;
-//		for (Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
-//			String elementName = FeatureExport.modifyName(entry.getKey().getName().toString());
-//			if (elementSet.contains("'" + elementName + "'") && entry.getKey().getType().getName().equalsIgnoreCase("Task") && entry.getValue().toString().contains(LEFT_BRACKET)) {
-//				formula = new String(entry.getValue());
-//				list.add("\t\t'" + elementName + "'" + COLON + "'" + formula + "'");
-//			}
-//			if (FeatureExport.IsItLeaf(entry.getKey()) && !elementSet.contains("'" + elementName + "'")) {
-//				formula1 = new String(entry.getValue());
-//				list.add("\t\t'" + elementName + "'" + COLON + "'" + formula1 + "'");
-//			}
-//		}
-//	}
 
 	/**
 	 * Writes the separated indicators to SymPy
@@ -1142,7 +1131,7 @@ public class ExportGRLMathSimplify implements IURNExport {
 	 */
 	private void writeIndependentFunction(Set<String> list) throws IOException {
 
-		// leaf feature
+		// leaf features
 		String formula1 = null;
 		for (Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
 			String elementName = FeatureExport.modifyName(entry.getKey().getName().toString());

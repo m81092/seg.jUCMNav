@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -952,6 +953,25 @@ public class ExportGRLMathS implements IURNExport {
 		return formula;
 	}
 
+	//add the elements in the list[]
+	private Set<String> elementList() throws IOException {
+		Set<String> elementListSet = new HashSet<String>();
+		for (Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
+			if (modelFormula.toString().contains(entry.getKey().getName().toString())) {
+				elementListSet.add("'" + FeatureExport.modifyName(entry.getKey().getName()) + "'");
+			}
+		}
+		if (!splitElements.isEmpty()) {
+			for (IntentionalElement e : splitElements) {
+				elementListSet.add("'" + FeatureExport.modifyName(e.getName()) + "'");
+			}
+		}
+		if (!elementSet.isEmpty()) {
+			elementListSet.addAll(elementSet);
+		}
+		return elementListSet;
+	}
+	
 	/**
 	 * Writes the translation of the elements to SymPy
 	 * 
@@ -959,27 +979,18 @@ public class ExportGRLMathS implements IURNExport {
 	 * @throws IOException
 	 */
 	private void writeTranslation(URNspec urn) throws IOException {
-		List<String> dictElements = new ArrayList<String>();
+
 		write("GRLDiagramName " + EQUALS + " '" + FeatureExport.modifyName(GRLname) + "' " + "\n");
+		Set<String> dictElements = new LinkedHashSet<String>();
 		StringBuffer varList = new StringBuffer();
+		StringBuffer tranScript = new StringBuffer();
+		StringBuffer allprint = new StringBuffer();
+		
 		varList.append("List");
 		// varList.append(urn.getName());
 		varList.append(EQUALS);
 		varList.append("[");
-		List<String> eleList = new ArrayList<String>();
-		eleList.addAll(elementSet);
-		// adding the separated elements to the list
-		for (IntentionalElement e : splitElements) {
-			eleList.add("'" + FeatureExport.modifyName(e.getName()) + "'");
-		}
-		// String message = String.join("-", list); 
-		varList.append(String.join(",", eleList));
-		varList.append("]");
-		write("\n# Variable list");
-		write("\n");
-		write(varList.toString());
-
-		StringBuffer tranScript = new StringBuffer();
+		
 		tranScript.append("Translate");
 		tranScript.append(LEFT_BRACKET);
 		tranScript.append("'");
@@ -997,18 +1008,23 @@ public class ExportGRLMathS implements IURNExport {
 		tranScript.append(COMMA);
 		tranScript.append("dict");
 		tranScript.append(RIGHT_BRACKET);
-		write("\nLANG = []\n" + "langList = ['python','c','c++','java',\"javascript\",'matlab','r']\n");
 
-		StringBuffer allprint = new StringBuffer();
-		write("def allPrint():\n");
-		// initializing a python dictionary
-		write("\tdict = {\n");
 		// writing all the separated indicators in the dictionary
 		writeIndependentIndicators(urn.getGrlspec().getIntElements().iterator(), dictElements);
-		// writing all the separated leaf features in the dictionary
-		//writeLeafFeatures(dictElements);
 		// writing all the separated functions in the dictionary
 		writeSeparatedElements(dictElements);
+		
+		varList.append(String.join(",", elementList()));
+		varList.append("]");
+		// printing all write() from here
+		write("\n# Variable list");
+		write("\n");
+		write(varList.toString());
+		write("\nLANG = []\n" + "langList = ['python','c','c++','java',\"javascript\",'matlab','r']\n");
+		write("def allPrint():\n");
+		// initializing a python dictionary named 'dict'
+		write("\tdict = {\n");
+		
 		String joinFunctions = String.join(",\n", dictElements);
 		write(joinFunctions);
 		write("\n\t}\n");
@@ -1045,7 +1061,7 @@ public class ExportGRLMathS implements IURNExport {
 	 *
 	 * @throws IOException
 	 */
-	private void writeIndependentIndicators(Iterator iterator, List<String> list) throws IOException {
+	private void writeIndependentIndicators(Iterator iterator, Set<String> list) throws IOException {
 		String formula = new String();
 		while (iterator.hasNext()) {
 			IntentionalElement IndicatorV = (IntentionalElement) iterator.next();
@@ -1061,7 +1077,7 @@ public class ExportGRLMathS implements IURNExport {
 	 *
 	 * @throws IOException
 	 */
-	private void writeSeparatedElements(List<String> list) throws IOException {
+	private void writeSeparatedElements(Set<String> list) throws IOException {
 
 		if (!splitElements.isEmpty()) {
 			String formula;
