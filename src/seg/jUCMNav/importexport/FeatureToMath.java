@@ -1,6 +1,3 @@
-/* Amal Ahmed Anda
- * 
- */
 package seg.jUCMNav.importexport;
 /**
  * this class export the Feature model into sympy function

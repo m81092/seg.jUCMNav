@@ -45,7 +45,7 @@ public class ExportGRLMathS extends GRLMathBase {
 	/**
 	 * 
 	 * @param element
-	 * @return
+	 * @return formula
 	 * @throws IOException
 	 */
 	StringBuffer writeLink(IntentionalElement element) throws IOException {

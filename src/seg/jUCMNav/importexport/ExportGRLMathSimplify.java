@@ -34,6 +34,7 @@ import urn.URNspec;
 import urncore.IURNDiagram;
 import urncore.IURNNode;
 
+
 /**
  * This class export the URN model into sympy function
  * 
@@ -45,7 +46,7 @@ public class ExportGRLMathSimplify extends GRLMathBase {
 	/**
 	 * 
 	 * @param element
-	 * @return
+	 * @return formula
 	 * @throws IOException
 	 */
 	StringBuffer writeLink(IntentionalElement element) throws IOException {
@@ -180,6 +181,7 @@ public class ExportGRLMathSimplify extends GRLMathBase {
 		}
 	}
 
+	
 	/**
 	 * If none of the top-level intentional elements has a weight, then these
 	 * top-level intentional elements should be weighted equally. we assume only the

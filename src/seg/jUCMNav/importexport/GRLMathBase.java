@@ -4,6 +4,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.TreeSet;
 
 import fm.FeatureDiagram;
 import grl.Actor;
@@ -26,7 +28,7 @@ import seg.jUCMNav.views.wizards.importexport.ExportWizard;
 import urn.URNspec;
 import urncore.IURNDiagram;
 
-// Base class for ExportGRLMath implementing default methods 
+// Base class for ExportGRLMath* implementing only default methods
 public abstract class GRLMathBase implements IURNExport {
 
 	String GRLname;
@@ -56,10 +58,10 @@ public abstract class GRLMathBase implements IURNExport {
 	Map<Actor, StringBuffer> actorMap;
 	StringBuffer modelFormula;
 	// stores the leaf element names
-	Set<String> elementSet = new HashSet<String>();
+	Set<String> elementSet = new LinkedHashSet<String>();
 	// stores the elements except indicators which are separated from the main
 	// function
-	Set<IntentionalElement> splitElements = new HashSet<IntentionalElement>();
+	Set<IntentionalElement> splitElements = new LinkedHashSet<IntentionalElement>();
 
 	abstract StringBuffer writeLink(IntentionalElement element) throws IOException;
 
@@ -100,6 +102,8 @@ public abstract class GRLMathBase implements IURNExport {
 						GRLname = purName;
 					}
 				}
+				
+				addSeparatingElements(urn);
 				writeFormula(urn);
 				writeActor(urn);
 				writeModel(urn);
@@ -428,6 +432,52 @@ public abstract class GRLMathBase implements IURNExport {
 	}
 
 	
+	void addSeparatingElements(URNspec urn) {
+		Set<IntentionalElement> allElements = new LinkedHashSet<IntentionalElement>();
+
+		// separating first level elements
+		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
+			IntentionalElement element = (IntentionalElement) it.next();
+			allElements.add(element);
+			boolean addFlag = true;
+			if (isGRLElement(element) && element.getLinksDest().size() != 0) {
+				for (Iterator it2 = element.getLinksDest().iterator(); it2.hasNext();) {
+					ElementLink destLink = (ElementLink) it2.next();
+					IntentionalElement srcElement = (IntentionalElement) (destLink.getSrc());
+					if (srcElement.getType() == IntentionalElementType.GOAL_LITERAL
+							|| srcElement.getType() == IntentionalElementType.SOFTGOAL_LITERAL) {
+						addFlag = false;
+						continue;
+					}
+				}
+				if (addFlag) splitElements.add(element);
+			}
+		}
+
+		// separating higher level elements
+		int total = allElements.size() - (2 * splitElements.size());
+		for (int i = 1; i < total; i++) {
+			for (IntentionalElement e : allElements) {
+				
+				if (isGRLElement(e) && e.getLinksDest().size() != 0) {
+
+					int count = 0;
+					for (Iterator it2 = e.getLinksDest().iterator(); it2.hasNext();) {
+						ElementLink destLink = (ElementLink) it2.next();
+						IntentionalElement srcElement = (IntentionalElement) (destLink.getSrc());
+						if (splitElements.contains(srcElement)) {
+							count++;
+						}
+					}
+					if (count == e.getLinksDest().size()) {
+						splitElements.add(e);
+					}
+				}
+				
+			}
+		}
+	}
+	
 	/**
 	 * Create formulas for each elements
 	 * 
@@ -459,7 +509,7 @@ public abstract class GRLMathBase implements IURNExport {
 				write("\n");
 			}
 		}
-
+		
 		write("# Indicator function\n");
 		// iterate all the leaf elements (for now checking just indicators)
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
@@ -508,10 +558,20 @@ public abstract class GRLMathBase implements IURNExport {
 					write(function.toString());
 					write("\n");
 					// adding the separated element to the set
-					addElement(element, elementFormula.toString());
+					addFeature(element, elementFormula.toString());
 					elementMap.put(element, elementFormula);
 				}
 			}
+		}
+		
+	}
+
+
+	// add the separated elements(leaf features/task with formula) except indicators
+	// to the set
+	void addFeature(IntentionalElement element, String formula) throws IOException {
+		if (element.getType() == IntentionalElementType.TASK_LITERAL && formula.contains(LEFT_BRACKET)) {
+			splitElements.add(element);
 		}
 	}
 
@@ -650,15 +710,6 @@ public abstract class GRLMathBase implements IURNExport {
 
 		return formula;
 
-	}
-
-	
-	// add the separated elements(leaf features/task with formula) except indicators
-	// to the set
-	void addElement(IntentionalElement element, String formula) throws IOException {
-		if (element.getType() == IntentionalElementType.TASK_LITERAL && formula.contains(LEFT_BRACKET)) {
-			splitElements.add(element);
-		}
 	}
 
 	
