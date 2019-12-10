@@ -84,9 +84,6 @@ public class FeatureToMathS {
 				writeFormula(urn);
 				writeModel(urn);
 				writeTranslation(urn);
-//				for (Map.Entry<IntentionalElement, StringBuffer> map : eleForMap.entrySet()) {
-//					System.out.println("the element is " +map.getKey().getName() +" ->> " + map.getValue());
-//				}
 				
 			} catch (Exception e) {
 				throw new InvocationTargetException(e);

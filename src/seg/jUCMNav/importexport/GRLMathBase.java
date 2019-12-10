@@ -444,13 +444,16 @@ public abstract class GRLMathBase implements IURNExport {
 				for (Iterator it2 = element.getLinksDest().iterator(); it2.hasNext();) {
 					ElementLink destLink = (ElementLink) it2.next();
 					IntentionalElement srcElement = (IntentionalElement) (destLink.getSrc());
-					if (srcElement.getType() == IntentionalElementType.GOAL_LITERAL
-							|| srcElement.getType() == IntentionalElementType.SOFTGOAL_LITERAL) {
+					if ((srcElement.getType() == IntentionalElementType.GOAL_LITERAL && srcElement.getLinksDest().size() != 0)
+							|| (srcElement.getType() == IntentionalElementType.TASK_LITERAL && srcElement.getLinksDest().size() != 0)
+							|| (srcElement.getType() == IntentionalElementType.SOFTGOAL_LITERAL && srcElement.getLinksDest().size() != 0)
+							|| (srcElement.getLinksDest().size() == 0 && srcElement.getType() != IntentionalElementType.INDICATOR_LITERAL)) {
 						addFlag = false;
 						continue;
 					}
 				}
-				if (addFlag) splitElements.add(element);
+				if (addFlag)
+					splitElements.add(element);
 			}
 		}
 
@@ -465,7 +468,7 @@ public abstract class GRLMathBase implements IURNExport {
 					for (Iterator it2 = e.getLinksDest().iterator(); it2.hasNext();) {
 						ElementLink destLink = (ElementLink) it2.next();
 						IntentionalElement srcElement = (IntentionalElement) (destLink.getSrc());
-						if (splitElements.contains(srcElement)) {
+						if (splitElements.contains(srcElement) || srcElement.getType() == IntentionalElementType.INDICATOR_LITERAL) {
 							count++;
 						}
 					}
