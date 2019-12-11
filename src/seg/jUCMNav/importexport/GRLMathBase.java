@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
+import fm.Feature;
 import fm.FeatureDiagram;
 import grl.Actor;
 import grl.ElementLink;
@@ -78,6 +79,7 @@ public abstract class GRLMathBase implements IURNExport {
 
 	@Override
 	public void export(URNspec urn, HashMap mapDiagrams, String filename) throws InvocationTargetException {
+		Set<IntentionalElement> featureElements = new LinkedHashSet<IntentionalElement>();
 
 		try {
 			fos = new FileOutputStream(filename);
@@ -103,14 +105,14 @@ public abstract class GRLMathBase implements IURNExport {
 					}
 				}
 				
-				addSeparatingElements(urn);
+				addSeparatingElements(urn, featureElements);
 				writeFormula(urn);
 				writeActor(urn);
 				writeModel(urn);
 				writeTranslation(urn);
 			}
 
-			FeatureExport.export(urn, mapDiagrams, filename);
+			FeatureExport.export(urn, mapDiagrams, filename, featureElements);
 
 		} catch (Exception e) {
 			throw new InvocationTargetException(e);
@@ -432,7 +434,7 @@ public abstract class GRLMathBase implements IURNExport {
 	}
 
 	
-	void addSeparatingElements(URNspec urn) {
+	void addSeparatingElements(URNspec urn, Set<IntentionalElement> featureElements) throws IOException {
 		Set<IntentionalElement> allElements = new LinkedHashSet<IntentionalElement>();
 
 		// separating first level elements
@@ -441,6 +443,10 @@ public abstract class GRLMathBase implements IURNExport {
 			allElements.add(element);
 			boolean addFlag = true;
 			if (isGRLElement(element) && element.getLinksDest().size() != 0) {
+				// separating the leaf features for Feature model with one if block
+				if (FeatureExport.IsItLeaf(element) && element instanceof Feature) {
+					featureElements.add(element);
+				}
 				for (Iterator it2 = element.getLinksDest().iterator(); it2.hasNext();) {
 					ElementLink destLink = (ElementLink) it2.next();
 					IntentionalElement srcElement = (IntentionalElement) (destLink.getSrc());
@@ -788,8 +794,9 @@ public abstract class GRLMathBase implements IURNExport {
 	Set<String> elementList() throws IOException {
 		Set<String> elementListSet = new HashSet<String>();
 		for (Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
-			if (modelFormula.toString().contains(entry.getKey().getName().toString())) {
-				elementListSet.add("'" + FeatureExport.modifyName(entry.getKey().getName()) + "'");
+			String name = FeatureExport.modifyName(entry.getKey().getName().toString());
+			if (modelFormula.toString().contains(name)) {
+				elementListSet.add("'" + name + "'");
 			}
 		}
 		if (!splitElements.isEmpty()) {

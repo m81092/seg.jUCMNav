@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +48,7 @@ public class FeatureToMathS {
 	public static final String PLUS = " + ";
 	public static final String MINUS = " - ";
 	public static final String MULTI = " * ";
+	public static final String COLON = " : ";
 
 	//store elements and the functions
 	private Map<IntentionalElement, StringBuffer> elementMap;
@@ -57,7 +59,10 @@ public class FeatureToMathS {
 	private HashSet<IntentionalElement> splitElements = new HashSet<IntentionalElement>();
 
 	// check if there are features in the feature diagram
-	public void export(URNspec urn, HashMap mapDiagrams, String filename) throws InvocationTargetException {
+	public void export(URNspec urn, HashMap mapDiagrams, String filename, Set<IntentionalElement> featureElements) throws InvocationTargetException {
+		// adding the feature elements to split elements
+		splitElements.addAll(featureElements);
+		
 		boolean featurFound = false;
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
@@ -155,6 +160,7 @@ public class FeatureToMathS {
 		}
 		
 		write("# Leaf Feature functions\n");
+		
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 			IntentionalElement element = (IntentionalElement) it.next();
 			leaf = IsItLeaf(element);
@@ -183,6 +189,7 @@ public class FeatureToMathS {
 		}
 		
 		write("# Non-leaf Feature functions\n");
+		
 		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
 
 			IntentionalElement element = (IntentionalElement) it.next();
@@ -491,7 +498,7 @@ public class FeatureToMathS {
 
 		String formula;
 		// && element.getLinksDest().size() == 0 &&
-		if (elementMap.get(element) != null && IsItLeaf(element)) {
+		if (elementMap.get(element) != null && IsItLeaf(element) && !splitElements.contains(element)) {
 			formula = elementMap.get(element).toString();
 
 		} else {
@@ -737,7 +744,7 @@ public class FeatureToMathS {
 		modelFormula = ModelFromRoot(urn);
 
 		function.append(modelFormula);
-		write("#The function of Model\n");
+		write("# The function of Model\n");
 		write(function.toString());
 		write("\n");
 	}
@@ -755,26 +762,41 @@ public class FeatureToMathS {
 		}
 		return formula;
 	}
+	
+	
+	//add the elements in the list[]
+	Set<String> elementList() throws IOException {
+		Set<String> elementListSet = new HashSet<String>();
+		for (Map.Entry<IntentionalElement, StringBuffer> entry : elementMap.entrySet()) {
+			String name = modifyName(entry.getKey().getName().toString());
+			if (modelFormula.toString().contains(name)) {
+				elementListSet.add("'" + name + "'");
+			}
+		}
+		if (!splitElements.isEmpty()) {
+			for (IntentionalElement e : splitElements) {
+				elementListSet.add("'" + modifyName(e.getName()) + "'");
+			}
+		}
+		return elementListSet;
+	}
+	
 
 	private void writeTranslation(URNspec urn) throws IOException {
 		// indicator
-		Set<String> dictElements = new HashSet<String>();
-		String modelName = modifyName(FMname);
-		write("FMDiagramName " + EQUALS + " '" + modifyName(FMname) + "' " + "\n");
+		Set<String> dictElements = new LinkedHashSet<String>();
 		StringBuffer varList = new StringBuffer();
-		varList.append("List");
+		StringBuffer tranScript = new StringBuffer();
+		StringBuffer allprint = new StringBuffer();
+		
+		//String modelName = modifyName(FMname);
+		write("FMDiagramName " + EQUALS + " '" + modifyName(FMname) + "' " + "\n");
+		
+		varList.append("List ");
 		// varList.append(urn.getName());
 		varList.append(EQUALS);
 		varList.append("[");
-		List<String> eleList = new ArrayList<String>();
-		eleList.addAll(elementSet);
-		varList.append(String.join(",", eleList));
-		varList.append("]");
-		write("\n# Variable list");
-		write("\n");
-		write(varList.toString());
-
-		StringBuffer tranScript = new StringBuffer();
+		
 		tranScript.append("Translate");
 		tranScript.append(LEFT_BRACKET);
 		tranScript.append("'");
@@ -792,15 +814,21 @@ public class FeatureToMathS {
 		tranScript.append(COMMA);
 		tranScript.append("dict");
 		tranScript.append(RIGHT_BRACKET);
+		
+		writeSeparatedFeatures(dictElements);
+		
+		varList.append(String.join(",", elementList()));
+		varList.append("]");
+		write("\n# Variable list");
+		write("\n");
+		write(varList.toString());
 		write("\nLANG = []\n" + "langList = ['python','c','c++','java',\"javascript\",'matlab','r']\n");
-
-		StringBuffer allprint = new StringBuffer();
 		write("def allPrint():\n");
 		// defining a dictionary for separated elements
 		write("\tdict = {\n");
 		// allprint.append("\tfor j in langList:\n");
 		// allprint.append("\t\tLANG = 'All'\n");
-		writeSeparatedFeatures(dictElements);
+		
 		
 		String joinFunctions = String.join(",\n", dictElements);
 		write(joinFunctions);
@@ -810,8 +838,8 @@ public class FeatureToMathS {
 		write("\t" + varList.toString() + "\n");
 		allprint.append("\t" + tranScript + "\n");
 		write(allprint.toString());
-		StringBuffer scriptLang = new StringBuffer("if(len(sys.argv)==1):\n\tLANG = langList\n" + "\tallPrint()\n"
-				+ "else:\n" + "\tfor i in sys.argv:\n" + "\t\tif(sys.argv.index(i)==0):continue\n"
+		StringBuffer scriptLang = new StringBuffer("if(len(sys.argv) == 1):\n\tLANG = langList\n" + "\tallPrint()\n"
+				+ "else:\n" + "\tfor i in sys.argv:\n" + "\t\tif(sys.argv.index(i) == 0):continue\n"
 				+ "\t\tif  (i.lower() not in langList):\n" + "\t\t\t" + "LANG = langList\n" + "\t\t\tbreak" + "\n"
 				+ "\t\telse:\n" + "\t\t\tLANG.append(str(i.lower()))\n\tallPrint()\n");
 		// StringBuffer scriptLang = new StringBuffer("if(len(sys.argv)==1):\n"+"\tLANG
@@ -828,8 +856,14 @@ public class FeatureToMathS {
 
 	}
 
-	private void writeSeparatedFeatures(Set<String> list) {
-		
+	private void writeSeparatedFeatures(Set<String> list) throws IOException {
+		if (!splitElements.isEmpty()) {
+			String formula;
+			for (IntentionalElement e : splitElements) {
+				formula = new String(elementMap.get(e));
+				list.add("\t\t'" + modifyName(e.getName()) + "'" + COLON + "'" + formula + "'");
+			}
+		}
 	}
 	
 	public String modifyName(String name) throws IOException {
