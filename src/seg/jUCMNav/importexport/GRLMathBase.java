@@ -212,20 +212,89 @@ public abstract class GRLMathBase implements IURNExport {
 			// TODO: need correct formula here
 			elementFormula.append(FeatureExport.modifyName(element.getName()));
 		} else if (indicatorValues[0].equalsIgnoreCase("B")) {
-			elementFormula.append(PIECEWISE);
-			elementFormula.append(LEFT_BRACKET);
-			elementFormula.append(LEFT_BRACKET);
-			elementFormula.append("100.0");
-			elementFormula.append(COMMA);
-			elementFormula.append(indicatorValues[1].replaceAll("[a-zA-Z]+", FeatureExport.modifyName(element.getName())));
-			elementFormula.append(RIGHT_BRACKET);
-			elementFormula.append(COMMA);
-			elementFormula.append(LEFT_BRACKET);
-			elementFormula.append("0.0");
-			elementFormula.append(COMMA);
-			elementFormula.append("True");
-			elementFormula.append(RIGHT_BRACKET);
-			elementFormula.append(RIGHT_BRACKET);
+			// checking for '<' or '<=' values
+			if (indicatorValues[1].trim().matches("<=?[a-zA-Z0-9]*")) {
+				elementFormula.append(PIECEWISE);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append("100.0");
+				elementFormula.append(COMMA);
+				elementFormula.append(FeatureExport.modifyName(element.getName()));
+				elementFormula.append(indicatorValues[1]);
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(COMMA);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append("0.0");
+				elementFormula.append(COMMA);
+				elementFormula.append("True");
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(RIGHT_BRACKET);
+			}
+			// checking for '>' or '>=' values
+			else if (indicatorValues[1].trim().matches(">=?[a-zA-Z0-9]*")) {
+				elementFormula.append(PIECEWISE);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append("100.0");
+				elementFormula.append(COMMA);
+				elementFormula.append(FeatureExport.modifyName(element.getName()));
+				elementFormula.append(indicatorValues[1]);
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(COMMA);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append("0.0");
+				elementFormula.append(COMMA);
+				elementFormula.append("True");
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(RIGHT_BRACKET);
+			} 
+			// checking for '>' or '>=' and '<' or '<=' values
+			else if (indicatorValues[1].trim().matches(">=?[0-9]*and<=?[0-9]*")) {
+				String[] subValues = indicatorValues[1].split("and");
+				elementFormula.append(PIECEWISE);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append("100.0");
+				elementFormula.append(COMMA);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append(FeatureExport.modifyName(element.getName()));
+				elementFormula.append(subValues[0]);
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(" & ");
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append(FeatureExport.modifyName(element.getName()));
+				elementFormula.append(subValues[1]);
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(COMMA);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append("0.0");
+				elementFormula.append(COMMA);
+				elementFormula.append("True");
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(RIGHT_BRACKET);
+			} 
+			else {
+				elementFormula.append(PIECEWISE);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append("100.0");
+				elementFormula.append(COMMA);
+				if (!indicatorValues[1].trim().equals("")) {
+					elementFormula.append(indicatorValues[1].replaceAll("[a-zA-Z]+", FeatureExport.modifyName(element.getName())));
+				} else {
+					elementFormula.append(FeatureExport.modifyName(element.getName()));
+				}
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(COMMA);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append("0.0");
+				elementFormula.append(COMMA);
+				elementFormula.append("True");
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(RIGHT_BRACKET);
+			}
+			
 		} else if (indicatorValues[0].equalsIgnoreCase("F")) {
 			indicatorValues[1] = indicatorValues[1].replaceAll("current", FeatureExport.modifyName(element.getName()));
 			elementFormula.append(indicatorValues[1]);
@@ -234,7 +303,7 @@ public abstract class GRLMathBase implements IURNExport {
 			elementFormula.append(indicatorFor);
 		}
 	}
-
+	
 	
 	StringBuffer indicatorFor(String[] indicatorValues, String indicatorName) throws IOException {
 		StringBuffer formula = new StringBuffer();
