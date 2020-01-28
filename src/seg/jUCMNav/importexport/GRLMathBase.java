@@ -4,16 +4,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.TreeSet;
 
 import fm.Feature;
 import fm.FeatureDiagram;
@@ -212,8 +211,38 @@ public abstract class GRLMathBase implements IURNExport {
 			// TODO: need correct formula here
 			elementFormula.append(FeatureExport.modifyName(element.getName()));
 		} else if (indicatorValues[0].equalsIgnoreCase("B")) {
+			
+			if (indicatorValues[1].contains("between")) {
+				String[] temp = indicatorValues[1].trim().split("between");
+		    String[] subVal = temp[1].split("and");
+				elementFormula.append(PIECEWISE);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append("100.0");
+				elementFormula.append(COMMA);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append(FeatureExport.modifyName(element.getName()));
+				elementFormula.append(" > ");
+				elementFormula.append(subVal[0]);
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(" & ");
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append(FeatureExport.modifyName(element.getName()));
+				elementFormula.append(" < ");
+				elementFormula.append(subVal[1]);
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(COMMA);
+				elementFormula.append(LEFT_BRACKET);
+				elementFormula.append("0.0");
+				elementFormula.append(COMMA);
+				elementFormula.append("True");
+				elementFormula.append(RIGHT_BRACKET);
+				elementFormula.append(RIGHT_BRACKET);
+			}
+			
 			// checking for '<' or '<=' values
-			if (indicatorValues[1].trim().matches("<=?[a-zA-Z0-9]*")) {
+			else if (indicatorValues[1].trim().matches("<=?[a-zA-Z0-9]*")) {
 				elementFormula.append(PIECEWISE);
 				elementFormula.append(LEFT_BRACKET);
 				elementFormula.append(LEFT_BRACKET);
@@ -621,8 +650,8 @@ public abstract class GRLMathBase implements IURNExport {
 		write("# Non-leaf element functions\n");
 
 		// checking the non leaf elements and adding the link
-		for (Iterator it = urn.getGrlspec().getIntElements().iterator(); it.hasNext();) {
-			IntentionalElement element = (IntentionalElement) it.next();
+		for (ListIterator it = urn.getGrlspec().getIntElements().listIterator(); it.hasPrevious();) {
+			IntentionalElement element = (IntentionalElement) it.previous();
 
 			if (isGRLElement(element)) {
 				elementFormula = new StringBuffer();
